@@ -1,0 +1,26 @@
+# ConstitutionCourt — Python toolchain, exact pins only.
+#
+# Every version here is `==`, never `>=` or `~=`. A direct-mode test suite that
+# passes on one machine and fails on another because a transitive resolver
+# moved is worse than no test suite: it teaches the team to distrust CI.
+#
+# Verified working set (2026-07-27, CPython 3.14.3, Windows + ubuntu-latest).
+# To move a pin: bump it here, run `pytest tests/direct`, and record the
+# rationale in docs/BUILD-PLAN.md under "Dependency pin log".
+#
+# Install:  python -m pip install -r requirements.txt
+
+# GenLayer direct-mode + integration test harness. Imports as `gltest`.
+# Ships the GenVM SDK loader that `tests/direct/conftest.py` uses to obtain
+# `Address` and the `calldata` codec before any deploy has run.
+genlayer-test==0.29.2
+
+# GenLayer Python client. genlayer-test declares `genlayer-py<0.17.0,>=0.13.0`,
+# so 0.18.0 (the current PyPI latest) is NOT installable alongside it. Pinned to
+# the version the resolver actually selects, which is also the version this
+# repo's tests were verified against. Revisit when genlayer-test lifts its cap.
+genlayer-py==0.16.3
+
+# Test runner. genlayer-test depends on pytest without an upper bound; pinning
+# here is what actually fixes the version.
+pytest==9.0.3

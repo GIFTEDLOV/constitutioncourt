@@ -1,0 +1,21 @@
+{
+  "schema": "constitutioncourt/response@1",
+  "proposal_id": "MC-2026-014",
+  "respondent": "0x91Be44C0aA71fE2233D5b8901234567890Ab4F08",
+  "submitted_at": "2026-03-20T11:30:00Z",
+  "statement": "MC-2026-014 was a standard-tier disbursement of 45,000 USDC and was carried under Article 4.2. Notice was published on 2026-03-01 and voting opened on 2026-03-05, a gap of 96 hours. Participation was 52 percent of eligible power. The challenger has not identified which Article is said to be breached.",
+  "supporting_points": [
+    {
+      "rule_id": "ART-4.2",
+      "argument": "45,000 USDC is at or below the 100,000 USDC standard tier, so the applicable threshold is more than half of votes cast. Excluding the 20,000 abstentions, 312,000 of 500,000 votes cast were in favour."
+    },
+    {
+      "rule_id": "ART-5.4",
+      "argument": "The earliest public announcement was 2026-03-01T09:00:00Z and voting opened 2026-03-05T09:00:00Z, satisfying the seventy-two hour minimum with 24 hours to spare."
+    },
+    {
+      "rule_id": "ART-3.1",
+      "argument": "520,000 of 1,000,000 eligible voting power participated, well above the twenty percent quorum."
+    }
+  ]
+}

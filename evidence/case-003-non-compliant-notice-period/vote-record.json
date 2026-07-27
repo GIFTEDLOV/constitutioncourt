@@ -1,0 +1,14 @@
+{
+  "schema": "constitutioncourt/vote-record@1",
+  "proposal_id": "MC-2026-027",
+  "voting_opened_at": "2026-05-04T08:00:00Z",
+  "voting_closed_at": "2026-05-07T08:00:00Z",
+  "eligible_voting_power": "1000000",
+  "participating_voting_power": "480000",
+  "tally": {
+    "for": "300000",
+    "against": "150000",
+    "abstain": "30000"
+  },
+  "declared_result": "PASSED"
+}

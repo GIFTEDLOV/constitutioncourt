@@ -1,0 +1,14 @@
+{
+  "schema": "constitutioncourt/proposal@1",
+  "proposal_id": "MC-2026-014",
+  "title": "Q2 security audit retainer",
+  "type": "treasury_disbursement",
+  "author": "0x7A3f2b19Dc4e5A80B6cF1234567890AbCdEf21D0",
+  "submitted_at": "2026-03-01T09:00:00Z",
+  "requested_amount": {
+    "asset": "USDC",
+    "amount": "45000"
+  },
+  "recipient": "0x91Be44C0aA71fE2233D5b8901234567890Ab4F08",
+  "body": "The Collective retains Northgate Security for a Q2 audit of the settlement contracts. Scope covers the escrow module, the fee router and the upgrade path. Fee is 45,000 USDC, payable in one instalment on execution of this proposal. This is a standard-tier disbursement under Article 4.2."
+}

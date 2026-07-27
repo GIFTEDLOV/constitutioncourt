@@ -1,0 +1,197 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# Stage 1 scope: there is no contract and no frontend yet, so this workflow
+# checks the things that DO exist — the evidence fixtures, the dependency pins,
+# and the line-ending normalization that the deployed contract bytes will depend
+# on. The contract guards below are written now and no-op until Stage 2, so the
+# rules land in CI before the first line of contract code rather than after.
+
+jobs:
+  evidence:
+    name: Evidence fixtures — schema v1
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      # validate.py has no third-party dependencies on purpose: the fixtures
+      # stay checkable even when the GenLayer toolchain is mid-upgrade.
+      - name: Validate fixtures
+        run: python evidence/validate.py
+
+  pins:
+    name: Dependency pins — exact, installable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      # A pin that cannot actually be installed is worse than no pin: it fails
+      # for the next person rather than for whoever wrote it. genlayer-test caps
+      # genlayer-py below 0.17.0, so the obvious "pin the latest of everything"
+      # set is unsatisfiable. This job is what catches that.
+      - name: Install pinned toolchain
+        run: python -m pip install -r requirements.txt
+
+      - name: Assert every requirement is an exact pin
+        run: |
+          set -euo pipefail
+          bad=$(grep -vE '^\s*(#|$)' requirements.txt | grep -v '==' || true)
+          if [ -n "$bad" ]; then
+            echo "::error::requirements.txt contains non-exact pins:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "All requirements are exact (==) pins."
+
+      - name: Assert installed versions match the pins
+        run: python -m pip check
+
+  normalization:
+    name: Line endings — LF, and contract runner pin
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # GenLayer derives a contract's address from the bytes of its source. A
+      # CRLF checkout deploys a different contract than an LF checkout from the
+      # same commit — this happened in App 1. .gitattributes pins LF; this job
+      # proves the pin is actually in effect.
+      - name: No CRLF in normalized file types
+        run: |
+          set -euo pipefail
+          offenders=$(git grep -Il $'\r' -- \
+            '*.py' '*.md' '*.json' '*.yml' '*.yaml' '*.txt' '*.ini' \
+            '*.ts' '*.tsx' '*.css' '*.html' || true)
+          if [ -n "$offenders" ]; then
+            echo "::error::CRLF line endings found in files pinned to LF:"
+            echo "$offenders"
+            exit 1
+          fi
+          echo "No CRLF found."
+
+      # No-ops until Stage 2. Present now so the rule cannot be violated by the
+      # commit that first introduces a contract.
+      - name: Contract must pin a runner version hash
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          contracts=(contracts/*.py)
+          if [ ${#contracts[@]} -eq 0 ]; then
+            echo "No contract yet (Stage 1) — check will engage at Stage 2."
+            exit 0
+          fi
+          # Require an actual hash — at least 40 chars of lowercase base32.
+          # A loose pattern here would happily accept ':test', which is exactly
+          # the thing the next step exists to reject.
+          for f in "${contracts[@]}"; do
+            if ! head -n 1 "$f" | grep -qE '"Depends":[[:space:]]*"py-genlayer(-multi)?:[0-9a-z]{40,}"'; then
+              echo "::error file=$f::first line must pin a runner version hash, e.g."
+              echo '  # { "Depends": "py-genlayer:1jb45aa8ynh2a9c9xn3b7qqh8sm5q93hwfp7jqmwsfhh8jpz09h6" }'
+              exit 1
+            fi
+          done
+          echo "All contracts pin a runner version hash."
+
+      - name: Contract must not use a runner alias
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          contracts=(contracts/*.py)
+          if [ ${#contracts[@]} -eq 0 ]; then
+            echo "No contract yet (Stage 1) — check will engage at Stage 2."
+            exit 0
+          fi
+          # ':test' and ':latest' are local-Studio aliases. Every GenLayer
+          # network rejects them, so a contract carrying one is undeployable.
+          if grep -nE 'py-genlayer(-multi)?:(test|latest)\b' "${contracts[@]}"; then
+            echo "::error::runner alias found; pin a version hash instead"
+            exit 1
+          fi
+          echo "No runner aliases found."
+
+      # The contract holds no balance and moves no value. That exclusion is what
+      # removes the entire value-extraction class from the threat model, so it
+      # is enforced mechanically rather than left to review.
+      - name: Contract must remain custody-free
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          contracts=(contracts/*.py)
+          if [ ${#contracts[@]} -eq 0 ]; then
+            echo "No contract yet (Stage 1) — check will engage at Stage 2."
+            exit 0
+          fi
+          if grep -nE 'payable|gl\.message\.value|\.emit\(|get_contract_at|deploy_contract' "${contracts[@]}"; then
+            echo "::error::custody or external-message surface found; ConstitutionCourt is no-escrow, no-transfer by design (docs/ARCHITECTURE.md §2)"
+            exit 1
+          fi
+          echo "Contract is custody-free."
+
+  tests:
+    name: Direct-mode tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install pinned toolchain
+        run: python -m pip install -r requirements.txt
+
+      # `--strict-markers` plus the `integration` marker registered in
+      # pytest.ini means the default run stays offline. Collecting zero tests is
+      # the expected Stage 1 result and must not fail the job — exit code 5.
+      - name: Run direct-mode suite
+        run: |
+          set -euo pipefail
+          set +e
+          python -m pytest tests/direct -q
+          code=$?
+          set -e
+          if [ $code -eq 5 ]; then
+            echo "No tests collected yet (Stage 1) — suite lands at Stage 3."
+            exit 0
+          fi
+          exit $code
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Scan for key material and recovery phrases
+        run: |
+          set -euo pipefail
+          # Each alternative is written so it cannot match this file itself. In
+          # App 1 spelling the recovery-phrase term out in full made the scanner
+          # match its own definition, so the job failed on every commit and a
+          # real secret was indistinguishable from that self-match. The bracket
+          # keeps the regex meaning identical while breaking the literal.
+          PATTERN='private[_-]?key|mnemon[i]c|seed[_-]?phrase|BEGIN [A-Z ]*PRIVATE KEY|xprv[0-9a-zA-Z]{20,}'
+          if grep -rInE "$PATTERN" \
+                --include='*.ts' --include='*.tsx' --include='*.js' --include='*.mjs' \
+                --include='*.json' --include='*.py' --include='*.yml' --include='*.yaml' \
+                --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git . ; then
+            echo "::error::Potential secret found"
+            exit 1
+          fi
+          echo "No secrets detected."

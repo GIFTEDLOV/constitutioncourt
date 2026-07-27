@@ -1,0 +1,12 @@
+{
+  "schema": "constitutioncourt/notice-record@1",
+  "proposal_id": "MC-2026-033",
+  "notices": [
+    {
+      "channel": "forum",
+      "url": "https://forum.meridian.example/t/mc-2026-033-validator-incentive-programme",
+      "published_at": "2026-06-01T09:00:00Z",
+      "content_summary": "Full text of MC-2026-033 published with the 120,000 USDC initial funding, the programme multisig recipient, and the announced voting window of 2026-06-05 to 2026-06-12."
+    }
+  ]
+}

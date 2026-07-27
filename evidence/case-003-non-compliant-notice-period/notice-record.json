@@ -1,0 +1,18 @@
+{
+  "schema": "constitutioncourt/notice-record@1",
+  "proposal_id": "MC-2026-027",
+  "notices": [
+    {
+      "channel": "forum",
+      "url": "https://forum.meridian.example/t/mc-2026-027-emergency-infrastructure-top-up",
+      "published_at": "2026-05-02T14:00:00Z",
+      "content_summary": "Full text of MC-2026-027 published with the 30,000 USDC amount, the operations recipient, and an expedited voting window opening 2026-05-04."
+    },
+    {
+      "channel": "chat",
+      "url": "https://chat.meridian.example/archive/governance/2026-05-04",
+      "published_at": "2026-05-04T09:15:00Z",
+      "content_summary": "Reminder posted in the governance channel that voting on MC-2026-027 is open."
+    }
+  ]
+}

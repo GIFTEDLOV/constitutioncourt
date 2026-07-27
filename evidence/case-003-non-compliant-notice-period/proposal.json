@@ -1,0 +1,14 @@
+{
+  "schema": "constitutioncourt/proposal@1",
+  "proposal_id": "MC-2026-027",
+  "title": "Emergency infrastructure top-up",
+  "type": "treasury_disbursement",
+  "author": "0x63Aa10Ee45Df8C7719b1234567890AbCdEf9B24",
+  "submitted_at": "2026-05-02T13:40:00Z",
+  "requested_amount": {
+    "asset": "USDC",
+    "amount": "30000"
+  },
+  "recipient": "0x88Cc71De93Ab4022F5e6a901234567890AbC1D5",
+  "body": "Node infrastructure costs for the coming quarter were underestimated and the operations account is projected to run dry within two weeks. This proposal tops it up by 30,000 USDC. Given the timeline, the Steering Circle opened voting on an expedited schedule."
+}

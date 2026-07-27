@@ -1,0 +1,50 @@
+{
+  "schema": "constitutioncourt/constitution@1",
+  "organization": "Meridian Collective",
+  "version": "2026-01-15",
+  "effective_from": "2026-01-15T00:00:00Z",
+  "rules": [
+    {
+      "id": "ART-2.2",
+      "title": "Scope of treasury governance",
+      "scope": "treasury",
+      "text": "These treasury rules govern every proposal that moves assets out of the Collective treasury to any recipient, regardless of asset or amount. A proposal that does not move treasury assets is governed elsewhere and is not subject to Articles 3 through 6."
+    },
+    {
+      "id": "ART-3.1",
+      "title": "Quorum",
+      "scope": "treasury",
+      "text": "A treasury vote is valid only if the voting power participating in it is at least twenty percent of the total eligible voting power recorded at the moment voting opened. Votes to abstain count as participation for the purposes of this Article."
+    },
+    {
+      "id": "ART-4.2",
+      "title": "Standard approval threshold",
+      "scope": "treasury",
+      "text": "A treasury disbursement of 100,000 USDC or less is approved when more than half of the votes cast are in favour. Abstentions count toward quorum under Article 3.1 but are excluded from the denominator when calculating this threshold."
+    },
+    {
+      "id": "ART-4.3",
+      "title": "Supermajority approval threshold",
+      "scope": "treasury",
+      "text": "A treasury disbursement of more than 100,000 USDC is approved only when at least two-thirds of the votes cast are in favour. Abstentions count toward quorum under Article 3.1 but are excluded from the denominator when calculating this threshold. A simple majority is not sufficient at this tier."
+    },
+    {
+      "id": "ART-5.4",
+      "title": "Notice period",
+      "scope": "treasury",
+      "text": "No treasury vote may open until the proposal has been publicly announced, in full, for at least seventy-two hours. The notice period is measured from the earliest public announcement of the proposal to the moment voting opened. An announcement made after voting opened does not satisfy this Article."
+    },
+    {
+      "id": "ART-6.1",
+      "title": "Single-disbursement cap",
+      "scope": "treasury",
+      "text": "No single treasury disbursement may exceed 500,000 USDC. A larger expenditure must be split into separately proposed and separately voted tranches."
+    },
+    {
+      "id": "ART-7.1",
+      "title": "Membership admission",
+      "scope": "membership",
+      "text": "New members are admitted by a simple majority of the Steering Circle. This Article does not govern treasury proposals."
+    }
+  ]
+}

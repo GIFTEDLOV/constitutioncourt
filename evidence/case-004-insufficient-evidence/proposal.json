@@ -1,0 +1,14 @@
+{
+  "schema": "constitutioncourt/proposal@1",
+  "proposal_id": "MC-2026-033",
+  "title": "Validator incentive programme — initial funding",
+  "type": "treasury_disbursement",
+  "author": "0x1De4bB77Ca20Ef8834c1234567890AbCdEf7A69",
+  "submitted_at": "2026-05-30T10:00:00Z",
+  "requested_amount": {
+    "asset": "USDC",
+    "amount": "120000"
+  },
+  "recipient": "0x5Ab92c00Fe17Bd4455D8a901234567890Ab3C82",
+  "body": "Initial funding of 120,000 USDC for the validator incentive programme, disbursed to the programme multisig and paid out to qualifying validators over the following three months against published uptime criteria."
+}

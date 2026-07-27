@@ -1,0 +1,14 @@
+{
+  "schema": "constitutioncourt/proposal@1",
+  "proposal_id": "MC-2026-021",
+  "title": "Ecosystem growth fund — first tranche",
+  "type": "treasury_disbursement",
+  "author": "0x4c8D91Ff20Ae7B3364a1234567890AbCdEf5C77",
+  "submitted_at": "2026-04-09T12:00:00Z",
+  "requested_amount": {
+    "asset": "USDC",
+    "amount": "250000"
+  },
+  "recipient": "0x2fD08a4471B9cE1122E6a901234567890Ab8E31",
+  "body": "The Collective establishes an ecosystem growth fund and disburses a first tranche of 250,000 USDC to the Growth Working Group multisig for grants to integrators over the following two quarters. Unspent funds return to the treasury at the end of Q4."
+}

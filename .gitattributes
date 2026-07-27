@@ -1,0 +1,56 @@
+# ConstitutionCourt — line-ending normalization
+#
+# WHY THIS FILE EXISTS AT COMMIT 1, NOT LATER
+#
+# GenLayer derives a contract's address from the transaction that carries its
+# source bytes. The deploy payload is the file, byte for byte — there is no
+# compilation step to normalize it away. So the checkout's line endings are
+# part of the deployed artifact's identity.
+#
+# On a Windows checkout with core.autocrlf=true, git materializes CRLF. On
+# Linux CI it materializes LF. Same commit, two different byte strings, two
+# different sha256 digests, two different contract addresses. App 1
+# (GIFTEDLOV/uptimebond) hit exactly this: a bundle built on Windows and one
+# built on Linux CI deployed *different contracts* from the same commit, and
+# it was only caught because a reproducibility check hashed the file on both.
+#
+# Pinning to LF makes the deployed bytes a property of the commit rather than
+# a property of whoever built it. This is cheap to do now and expensive to
+# retrofit after addresses have been published.
+
+# --- Contract sources: consensus-critical, LF is mandatory ------------------
+contracts/**/*.py                 text eol=lf
+frontend/src/contract/*.py        text eol=lf
+
+# --- Evidence fixtures: fetched by validators over HTTPS --------------------
+# Not hashed on-chain, but validators re-fetch and re-derive from these. Stable
+# bytes keep diffs honest and keep fixture-served content identical across
+# platforms.
+evidence/**/*.json                text eol=lf
+evidence/**/*.md                  text eol=lf
+
+# --- Everything else --------------------------------------------------------
+*.py       text eol=lf
+*.md       text eol=lf
+*.json     text eol=lf
+*.yml      text eol=lf
+*.yaml     text eol=lf
+*.txt      text eol=lf
+*.ts       text eol=lf
+*.tsx      text eol=lf
+*.css      text eol=lf
+*.html     text eol=lf
+*.ini      text eol=lf
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+
+# --- Binary: never touch ----------------------------------------------------
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.webp     binary
+*.ico      binary
+*.woff     binary
+*.woff2    binary
+*.pdf      binary

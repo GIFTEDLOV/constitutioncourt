@@ -1,0 +1,12 @@
+{
+  "schema": "constitutioncourt/notice-record@1",
+  "proposal_id": "MC-2026-021",
+  "notices": [
+    {
+      "channel": "forum",
+      "url": "https://forum.meridian.example/t/mc-2026-021-ecosystem-growth-fund",
+      "published_at": "2026-04-10T10:00:00Z",
+      "content_summary": "Full text of MC-2026-021 published with the 250,000 USDC first tranche, the Growth Working Group multisig recipient, and the announced voting window of 2026-04-14 to 2026-04-21."
+    }
+  ]
+}

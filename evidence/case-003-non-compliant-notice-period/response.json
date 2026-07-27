@@ -1,0 +1,17 @@
+{
+  "schema": "constitutioncourt/response@1",
+  "proposal_id": "MC-2026-027",
+  "respondent": "0x88Cc71De93Ab4022F5e6a901234567890AbC1D5",
+  "submitted_at": "2026-05-19T15:05:00Z",
+  "statement": "MC-2026-027 was an emergency measure. The operations account would have run dry before a full seventy-two hour notice period could elapse. The proposal was announced the moment it was drafted, the community was notified again in the governance channel on the day voting opened, and the vote itself was carried decisively with 66.7 percent in favour on 48 percent participation. The Collective's intent behind Article 5.4 is to prevent surprise votes, and no member was surprised.",
+  "supporting_points": [
+    {
+      "rule_id": "ART-5.4",
+      "argument": "Notice was published at the earliest practical moment, 2026-05-02T14:00:00Z, twenty minutes after the proposal was drafted. A second notice went out in the governance channel on 2026-05-04."
+    },
+    {
+      "rule_id": "ART-4.2",
+      "argument": "30,000 USDC is standard tier. 300,000 of 450,000 non-abstaining votes cast were in favour, which is 66.7 percent and well above the required simple majority."
+    }
+  ]
+}

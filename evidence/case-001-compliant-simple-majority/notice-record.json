@@ -1,0 +1,18 @@
+{
+  "schema": "constitutioncourt/notice-record@1",
+  "proposal_id": "MC-2026-014",
+  "notices": [
+    {
+      "channel": "forum",
+      "url": "https://forum.meridian.example/t/mc-2026-014-q2-security-audit-retainer",
+      "published_at": "2026-03-01T09:00:00Z",
+      "content_summary": "Full text of MC-2026-014 published with the requested amount, the recipient, and the announced voting window of 2026-03-05 to 2026-03-12."
+    },
+    {
+      "channel": "mailing-list",
+      "url": "https://lists.meridian.example/archive/2026-03/0004.html",
+      "published_at": "2026-03-01T16:20:00Z",
+      "content_summary": "Governance digest repeating the MC-2026-014 announcement and the voting window."
+    }
+  ]
+}
