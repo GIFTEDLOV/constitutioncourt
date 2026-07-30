@@ -188,6 +188,7 @@ Recorded so they are not silently rediscovered later.
 | 2026-07-27 | `pytest==9.0.3`                                  | `genlayer-test` depends on pytest with no upper bound; pinning here is what actually fixes the version. Verified on CPython 3.14.3. |
 | 2026-07-27 | Runner `py-genlayer:1jb45aa8…jpz09h6`            | Pinned hash. `:test` and `:latest` are local-Studio aliases that all GenLayer networks reject. |
 | 2026-07-29 | `genvm-linter==0.11.0`                           | Provides the `genvm-lint` console script (package name and script name differ). Stage 2's exit condition is a clean lint, so the tool is pinned like everything else it gates. |
+| 2026-07-30 | GenVM SDK `v0.2.16` (`tests/direct/conftest.py`) | **Not** the harness default. Unset, the harness uses the newest version already in `~/.cache/gltest-direct` and falls back to GitHub's "latest" genvm release only when that cache is empty. "latest" currently resolves to a `v0.3.0-rc` candidate that ships no `genvm-universal.tar.xz` asset, so a clean runner 404s and every deploying test fails — which is precisely what the first CI run of this suite did while the same commit was green locally on a cache warmed by App 1. v0.2.16 is the release containing the runner hash pinned in the contract header, so the two pins agree by construction. |
 
 ## Architecture change log
 

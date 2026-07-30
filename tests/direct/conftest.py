@@ -29,6 +29,26 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CONTRACT_PATH = REPO_ROOT / "contracts" / "constitution_court.py"
 EVIDENCE_ROOT = REPO_ROOT / "evidence"
 
+# --- GenVM SDK version — PINNED, and it has to be ----------------------------
+#
+# Left unset, the harness picks the newest version already in
+# ~/.cache/gltest-direct, and only if that cache is empty does it resolve
+# GitHub's "latest" genvm release. Both branches are traps:
+#
+# * "latest" currently resolves to a v0.3.0-rc release candidate, and the rc
+#   releases ship no `genvm-universal.tar.xz` asset — so a cold cache 404s and
+#   every test that deploys fails. That is exactly what happened on the first CI
+#   run of this suite: green on a developer machine with a warm cache from
+#   App 1, 247/247 broken on a clean runner.
+# * Even when it resolves, "newest cached" makes the SDK a property of whichever
+#   project last populated the cache rather than of this commit.
+#
+# v0.2.16 is the release that actually contains the runner hash pinned in the
+# contract header (`py-genlayer:1jb45aa8…jpz09h6`), so this pin and the runner
+# pin agree by construction. Both `address_cls` and every deploy pass it
+# explicitly; passing it in only one place leaves the other resolving "latest".
+SDK_VERSION = "v0.2.16"
+
 # The four fixture cases, and the outcome each is built to produce.
 CASE_COMPLIANT = "case-001-compliant-simple-majority"
 CASE_TWO_THIRDS = "case-002-non-compliant-two-thirds"
@@ -91,7 +111,7 @@ def address_cls():
     """
     from gltest.direct.sdk_loader import setup_sdk_paths
 
-    setup_sdk_paths(CONTRACT_PATH)
+    setup_sdk_paths(CONTRACT_PATH, SDK_VERSION)
     from genlayer.py.types import Address
 
     return Address
@@ -320,6 +340,7 @@ def deploy_case(direct_vm, direct_deploy, direct_alice, direct_bob):
             urls["proposal_url"],
             urls["vote_record_url"],
             urls["notice_record_url"],
+            sdk_version=SDK_VERSION,
         )
 
     return _deploy

@@ -165,8 +165,19 @@ jobs:
       - name: Install pinned toolchain
         run: python -m pip install -r requirements.txt
 
+      # The direct-mode harness needs the GenVM SDK on disk. Keyed on the
+      # version pinned in tests/direct/conftest.py, so a pin bump misses the
+      # cache and re-downloads instead of silently reusing the old SDK.
+      - name: Cache the pinned GenVM SDK
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/gltest-direct
+          key: gltest-direct-${{ hashFiles('tests/direct/conftest.py') }}
+
       # `--strict-markers` plus the `integration` marker registered in
-      # pytest.ini means the default run stays offline.
+      # pytest.ini means the default run stays offline. The SDK download above
+      # is the one network access, and it is a pinned release artifact — no
+      # GenLayer network, no wallet, no GEN.
       #
       # Exit code 5 (no tests collected) was tolerated at Stage 1, when the
       # suite did not exist yet. It is now a failure: a collection error that
