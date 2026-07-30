@@ -143,16 +143,6 @@ exploit, because the ruling depends only on evidence, not on who triggered it.
 cannot be called from `RESPONDED` (one response only, so the document cannot be
 swapped after seeing how it lands) or from `RULED` (the record is frozen).
 
-### Why `rule` is permissionless
-
-Anyone may call `rule`. Restricting it to the two parties reintroduces the
-deadlock through a smaller door: if the challenger loses interest and the
-respondent prefers no ruling, the case sits in `OPEN` forever. The caller pays
-gas and gains nothing — there is no payout to race for and no ordering to
-exploit, because the ruling depends only on evidence, not on who triggered it.
-
-`submit_response` remains restricted to the respondent address.
-
 ### Timestamps
 
 All timestamps come from the deterministic transaction timestamp, which is

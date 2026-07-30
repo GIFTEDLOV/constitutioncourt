@@ -162,7 +162,7 @@ Mapped to `test_evidence_policy.py`.
 
 | Attack                                        | Mitigation                                                                 |
 | --------------------------------------------- | -------------------------------------------------------------------------- |
-| Respondent deadlocks the case by never responding | `rule` is callable from `OPEN`. See [ARCHITECTURE §5](ARCHITECTURE.md#why-rule-is-reachable-from-open) |
+| Respondent deadlocks the case by never responding | `rule` is callable from `OPEN`. See [ARCHITECTURE §5](ARCHITECTURE.md#why-rule-is-reachable-from-open--decided) |
 | Both parties lose interest; case never ruled  | `rule` is permissionless — any third party can trigger adjudication          |
 | Respondent swaps the response after seeing sentiment | `submit_response` requires `OPEN`; a second call is rejected          |
 | Losing party re-rolls the adjudication        | `rule` requires `OPEN` or `RESPONDED`; `RULED` is terminal                   |
