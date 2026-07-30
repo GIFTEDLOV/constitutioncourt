@@ -6,8 +6,8 @@ starts before the earlier stage's exit condition is met.
 | Stage | Scope                                      | Status         |
 | ----- | ------------------------------------------ | -------------- |
 | 1     | Repository, pins, architecture lock         | ✅ **Complete** |
-| 2     | Contract implementation                     | Not started    |
-| 3     | Direct-mode test suite                      | Not started    |
+| 2     | Contract implementation                     | ✅ **Complete** |
+| 3     | Direct-mode test suite                      | ✅ **Complete** |
 | 4     | Frontend                                    | Not started    |
 | 5     | Deployment                                  | Not started — requires explicit approval |
 
@@ -89,6 +89,31 @@ one test. T-6 and T-8 are accepted rather than mitigated and have none by design
 **Exit condition:** `pytest tests/direct` green offline; all four fixtures
 produce their documented outcomes; every row above implemented.
 
+**Delivered:** all 13 files, 247 tests, green offline in ~45 s.
+
+Two constraints of the direct-mode harness are worth recording, because both are
+invisible until they produce a confusing failure:
+
+* **One deployment per test.** The SDK registers the contract class in a
+  module-level global and raises `only one contract is allowed` when the module
+  is re-executed inside the same activated VM; separately, `deploy_contract`
+  derives the contract address from the file path, so a second deploy of the same
+  file shares one storage root and would overwrite the first rather than stand
+  beside it. Tests that compare two executions deploy once and roll back with
+  `direct_vm.snapshot()` / `revert()` — wrapped as the `from_scratch` fixture.
+* **First mock wins.** Both mock matchers return the first pattern that matches,
+  so re-registering a URL or prompt does not override the earlier registration.
+  A test that needs a different answer for the same prompt must clear first —
+  `reset_mocks`, and the `serve_*` helpers that call it.
+
+One contract behaviour was discovered rather than specified, and is pinned by
+`test_determinism.py`: **a float anywhere in the model's JSON output cannot cross
+the calldata boundary at all.** GenLayer calldata has no float type, so a model
+that quotes `65.38` as a JSON number rather than a string produces a payload that
+decodes to `None`, and the ruling is rejected as malformed. The float can
+therefore never reach storage, where its repr could differ between hosts — but
+the mechanism is a decode failure, not stringification.
+
 ## Stage 4 — Frontend
 
 **Scope:** read-only case viewer plus case creation. Vite + React + TypeScript,
@@ -152,7 +177,7 @@ Recorded so they are not silently rediscovered later.
 | Evidence content hashing    | Stage 5     | The challenger picks the hash, so it attests to what the challenger pinned, not what the DAO published — it moves trust rather than removing it. Only worthwhile paired with a neutral archival source. See [T-1](THREAT-MODEL.md#t-1-evidence-mutation-after-pinning). |
 | Integration test suite      | Stage 5     | Needs a funded account and live network. The `integration` pytest marker is registered now so adding it later cannot introduce an unregistered-marker warning. |
 | Multi-case registry         | Never       | Out of scope. One instance per case is a locked constraint.                                                          |
-| Strict `OPEN→RESPONDED→RULED` chain | Open  | Flagged for user review. Currently `rule` is reachable from `OPEN` to prevent respondent deadlock. Reverting is a one-line guard change. See [ARCHITECTURE §5](ARCHITECTURE.md#why-rule-is-reachable-from-open). |
+| ~~Strict `OPEN→RESPONDED→RULED` chain~~ | **Resolved 2026-07-27** | **Decided: `rule` may be called from `OPEN` or `RESPONDED`.** The response is optional; requiring `RESPONDED` would let a respondent deadlock the case by refusing to answer. `submit_response` is permitted only while `OPEN`. After `RULED` nothing can change. See [ARCHITECTURE §5](ARCHITECTURE.md#why-rule-is-reachable-from-open--decided). |
 
 ## Dependency pin log
 
@@ -162,9 +187,20 @@ Recorded so they are not silently rediscovered later.
 | 2026-07-27 | `genlayer-py==0.16.3`                            | **Not** 0.18.0. `genlayer-test` declares `genlayer-py<0.17.0,>=0.13.0`, so the latest release is not installable alongside it. Pinned to the version the resolver actually selects. Revisit when the cap lifts. |
 | 2026-07-27 | `pytest==9.0.3`                                  | `genlayer-test` depends on pytest with no upper bound; pinning here is what actually fixes the version. Verified on CPython 3.14.3. |
 | 2026-07-27 | Runner `py-genlayer:1jb45aa8…jpz09h6`            | Pinned hash. `:test` and `:latest` are local-Studio aliases that all GenLayer networks reject. |
+| 2026-07-29 | `genvm-linter==0.11.0`                           | Provides the `genvm-lint` console script (package name and script name differ). Stage 2's exit condition is a clean lint, so the tool is pinned like everything else it gates. |
 
 ## Architecture change log
 
-Nothing yet. Any change to a LOCKED section of
-[ARCHITECTURE.md](ARCHITECTURE.md) after Stage 2 begins is recorded here with
-its rationale and requires a rerun of the full direct-mode matrix.
+No LOCKED section of [ARCHITECTURE.md](ARCHITECTURE.md) has changed. The
+contract and test suite were built to the locked specification as written.
+
+## CI change log
+
+Changes to `.github/workflows/ci.yml` that alter what CI enforces, as opposed to
+what it merely reports.
+
+| Date       | Change                                                | Rationale                                                                 |
+| ---------- | ----------------------------------------------------- | ------------------------------------------------------------------------- |
+| 2026-07-30 | Custody check strips comment lines before matching     | The guard grepped for `payable` and matched the contract's own sentence documenting that it *has* no payable method, so the job failed on the file that states the rule it enforces. This is the same self-match that broke App 1's secret scanner, and the fix is the same shape: keep the pattern, exclude the line that defines it. Verified against a probe file with a real `@gl.public.payable` — still caught. |
+| 2026-07-30 | Direct-mode suite no longer tolerates exit code 5      | Zero collected tests was the expected Stage 1 result. With the suite in place, a collection error that left nothing to run would otherwise turn the job green while testing nothing. |
+| 2026-07-30 | `genvm-lint` job added                                 | Stage 2's exit condition is a clean lint and `requirements.txt` already promised CI ran it, but no job did. Offline; it reads the contract and does not deploy it. |

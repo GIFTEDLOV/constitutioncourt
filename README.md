@@ -32,8 +32,10 @@ No escrow. No transfers. No tokens. The ruling is an opinion with citations.
                                                        RULED
 ```
 
-If the respondent never answers, `rule` proceeds directly from `OPEN` — silence
-is a choice not to argue, not a way to bury the case.
+**The response is optional.** If the respondent never answers, `rule` proceeds
+directly from `OPEN` — silence is a choice not to argue, not a way to bury the
+case. `submit_response` is permitted only while `OPEN`, and once a case is
+`RULED` no evidence or response can be changed.
 
 ## Rulings
 

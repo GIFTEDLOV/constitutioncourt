@@ -137,8 +137,17 @@ jobs:
             echo "No contract yet (Stage 1) — check will engage at Stage 2."
             exit 0
           fi
-          if grep -nE 'payable|gl\.message\.value|\.emit\(|get_contract_at|deploy_contract' "${contracts[@]}"; then
+          # Comment lines are stripped before matching. The contract documents
+          # its own exclusions ("has no payable method"), and a check that
+          # matched that sentence would fail on the very file that states the
+          # rule it enforces — the same self-match that broke App 1's secret
+          # scanner. `-H` forces the filename prefix so the strip pattern works
+          # even when the glob expands to a single file.
+          found=$(grep -nHE 'payable|gl\.message\.value|\.emit\(|get_contract_at|deploy_contract' \
+            "${contracts[@]}" | grep -vE '^[^:]*:[0-9]+:[[:space:]]*#' || true)
+          if [ -n "$found" ]; then
             echo "::error::custody or external-message surface found; ConstitutionCourt is no-escrow, no-transfer by design (docs/ARCHITECTURE.md §2)"
+            echo "$found"
             exit 1
           fi
           echo "Contract is custody-free."
@@ -157,20 +166,34 @@ jobs:
         run: python -m pip install -r requirements.txt
 
       # `--strict-markers` plus the `integration` marker registered in
-      # pytest.ini means the default run stays offline. Collecting zero tests is
-      # the expected Stage 1 result and must not fail the job — exit code 5.
+      # pytest.ini means the default run stays offline.
+      #
+      # Exit code 5 (no tests collected) was tolerated at Stage 1, when the
+      # suite did not exist yet. It is now a failure: a collection error that
+      # left zero tests would otherwise turn this job green while testing
+      # nothing, which is the one way a test gate can be worse than absent.
       - name: Run direct-mode suite
-        run: |
-          set -euo pipefail
-          set +e
-          python -m pytest tests/direct -q
-          code=$?
-          set -e
-          if [ $code -eq 5 ]; then
-            echo "No tests collected yet (Stage 1) — suite lands at Stage 3."
-            exit 0
-          fi
-          exit $code
+        run: python -m pytest tests/direct -q
+
+  genvm-lint:
+    name: Contract validation — genvm-lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Install pinned toolchain
+        run: python -m pip install -r requirements.txt
+
+      # The static GenVM linter. Fully offline — it reads the contract, it does
+      # not deploy it. Stage 2's exit condition is that this is clean, and
+      # requirements.txt already promises CI runs it, so the job belongs here
+      # rather than in a developer's shell history.
+      - name: Lint the contract
+        run: genvm-lint contracts/constitution_court.py
 
   secret-scan:
     name: Secret scan

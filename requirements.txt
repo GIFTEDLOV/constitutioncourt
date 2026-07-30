@@ -24,3 +24,9 @@ genlayer-py==0.16.3
 # Test runner. genlayer-test depends on pytest without an upper bound; pinning
 # here is what actually fixes the version.
 pytest==9.0.3
+
+# GenVM static linter. Provides the `genvm-lint` console script (note the
+# package is `genvm-linter`, the script is `genvm-lint`). Run it on the contract
+# before every commit; CI runs it too.
+genvm-linter==0.11.0
+

@@ -106,35 +106,42 @@ would not need GenLayer and should not be built on it.
                      no response was ever submitted
 ```
 
-Two paths reach `RULED`:
+Two paths reach `RULED`, and **both are first-class**:
 
 | Path                          | When                                                        |
 | ----------------------------- | ----------------------------------------------------------- |
-| `OPEN → RESPONDED → RULED`    | Respondent answered. The primary path.                       |
-| `OPEN → RULED`                | Respondent never answered. The no-response path.             |
+| `OPEN → RULED`                | Respondent did not answer. The response is optional.         |
+| `OPEN → RESPONDED → RULED`    | Respondent answered.                                         |
 
-`RULED` is terminal. There is no reopening, no second ruling, no appeal method.
-A party who disputes the ruling uses GenLayer's **native transaction appeal** on
-the `rule` transaction.
+`RULED` is terminal. There is no reopening, no second ruling, and no appeal
+method. After `RULED`, **no evidence and no response can be changed** — every
+URL field is frozen. A party who disputes the ruling uses GenLayer's **native
+transaction appeal** on the `rule` transaction.
 
-### Why `rule` is reachable from `OPEN`
+### Why `rule` is reachable from `OPEN` — DECIDED
 
-> ⚠️ **This is a deliberate refinement of the specified lifecycle and is flagged
-> for review.** The brief specifies `OPEN → RESPONDED → RULED`. Implementing
-> only that chain makes `rule` require `RESPONDED`, which hands the respondent —
-> the party with the most to lose from an adverse ruling — a unilateral veto.
-> They never call `submit_response`, the case never leaves `OPEN`, and it is
-> permanently unrulable. Since there is no escrow and no deadline, nothing else
-> in the system breaks the stalemate.
->
-> The fix costs nothing: `rule` accepts `OPEN` or `RESPONDED`, and adjudicates
-> whatever evidence exists. A respondent's silence becomes a choice not to
-> argue, rather than a way to bury the case. `OPEN → RESPONDED → RULED` remains
-> the primary path and the one the docs lead with.
->
-> If you want the strict three-state chain instead, say so and it becomes a
-> one-line guard change in Stage 2 — but the deadlock is then a known,
-> accepted property.
+The respondent's response is **optional**. `rule` therefore accepts `OPEN` or
+`RESPONDED` and adjudicates whatever evidence exists at that moment.
+
+Requiring `RESPONDED` would hand the respondent — the party with the most to
+lose from an adverse ruling — a unilateral veto: never call `submit_response`,
+and the case never leaves `OPEN` and is permanently unrulable. With no escrow
+and no deadline, nothing else in the system breaks that stalemate.
+
+A respondent's silence is therefore a choice not to argue, not a way to bury the
+case.
+
+### Why `rule` is permissionless
+
+Anyone may call `rule`. Restricting it to the two parties reintroduces the
+deadlock through a smaller door: if the challenger loses interest and the
+respondent prefers no ruling, the case sits in `OPEN` forever. The caller pays
+gas and gains nothing — there is no payout to race for and no ordering to
+exploit, because the ruling depends only on evidence, not on who triggered it.
+
+`submit_response` is restricted to the respondent address **and to `OPEN`**. It
+cannot be called from `RESPONDED` (one response only, so the document cannot be
+swapped after seeing how it lands) or from `RULED` (the record is frozen).
 
 ### Why `rule` is permissionless
 
@@ -224,8 +231,8 @@ Exactly five. No others in Stage 2.
 
 Sets `challenger = gl.message.sender_account`, `status = OPEN`, `created_at`.
 
-Deterministic validation, all raising plain `gl.UserError` before any
-non-deterministic execution:
+Deterministic validation, all raising `gl.vm.UserError` with the `[INPUT]`
+prefix before any non-deterministic execution:
 
 - Every URL starts with `https://`. Plain HTTP is rejected — an on-path attacker
   could serve different bytes to different validators and split consensus.
@@ -384,8 +391,13 @@ another value it already returned invites the two to disagree.
 | `[INVALID_EVIDENCE]`  | Unexpected 4xx, unparseable JSON, wrong `schema` literal       | Disagree → no ruling recorded           |
 | `[LLM_ERROR]`         | Malformed model output, invariant violation, unresolvable id   | Disagree → rotation                     |
 
-`[INPUT]` errors are raised **before** the nondet block and use plain
-`gl.UserError`. The other three occur inside it and use `gl.vm.UserError`.
+All four use `gl.vm.UserError` — the prefix, not the exception class, is what
+carries the classification. `[INPUT]` errors are raised **before** the nondet
+block and revert the call deterministically; the other three occur inside it and
+drive the validator's agree/disagree decision.
+
+Bare `Exception` is never raised in contract code: it becomes an unrecoverable
+`VMError` rather than something a validator can classify.
 
 The distinction that matters most: **no error prefix ever becomes an outcome.**
 `INSUFFICIENT_EVIDENCE` is a ruling about documents that were successfully read.
@@ -393,9 +405,6 @@ A 503 is a fetch failure. Mapping a 503 to `INSUFFICIENT_EVIDENCE` would convert
 a retryable blip into a permanent `UNRESOLVED` verdict, and because a 503 is not
 reproducible across validators it would also be a consensus hazard. See
 [case 004](../evidence/case-004-insufficient-evidence/README.md).
-
-Bare `Exception` is never raised in the contract — it becomes an unrecoverable
-`VMError` rather than something a validator can classify.
 
 ## 10. Runner pin
 
