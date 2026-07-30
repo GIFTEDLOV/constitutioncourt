@@ -77,7 +77,7 @@ jobs:
           set -euo pipefail
           offenders=$(git grep -Il $'\r' -- \
             '*.py' '*.md' '*.json' '*.yml' '*.yaml' '*.txt' '*.ini' \
-            '*.ts' '*.tsx' '*.css' '*.html' || true)
+            '*.ts' '*.tsx' '*.js' '*.mjs' '*.cjs' '*.css' '*.html' || true)
           if [ -n "$offenders" ]; then
             echo "::error::CRLF line endings found in files pinned to LF:"
             echo "$offenders"
@@ -185,6 +185,85 @@ jobs:
       # nothing, which is the one way a test gate can be worse than absent.
       - name: Run direct-mode suite
         run: python -m pytest tests/direct -q
+
+  frontend:
+    name: Frontend — lint, typecheck, unit tests, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # `npm ci` installs strictly from the lockfile and fails if package.json
+      # and the lock disagree — the point of committing the lock at all.
+      - name: Install pinned dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+
+      # Offline: hashes files and inspects package.json. This is the check that
+      # proves the embedded contract hashes identically on Windows and on Linux,
+      # which is what makes the deployed bytes a property of the commit.
+      - name: Reproducibility and exact pins
+        run: npm run repro
+
+      # Offline: encodes the real constructor argument list through the real
+      # codec. No wallet, no network, no signature.
+      - name: Calldata encoding
+        run: npm run e2e:encoding
+
+  frontend-browser:
+    name: Frontend — browser smoke, accessibility, overflow sweep
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install pinned dependencies
+        run: npm ci
+
+      - name: Install Chrome for Puppeteer
+        run: npx puppeteer browsers install chrome
+
+      - name: Build
+        run: npm run build
+
+      # Every browser suite blocks all outbound requests except localhost, so
+      # the RPC is unreachable by construction: no GenLayer network, no wallet
+      # signature, no GEN. Reading must still work, which is what is asserted.
+      - name: Browser smoke test
+        run: npm run e2e
+
+      - name: Accessibility — zero serious/critical axe violations
+        run: npm run a11y
+
+      - name: Overflow and console sweep
+        run: npm run sweep
 
   genvm-lint:
     name: Contract validation — genvm-lint

@@ -88,6 +88,14 @@ preview is never submitted, never stored, and carries no weight. If the frontend
 could compute the outcome and the contract merely recorded it, this application
 would not need GenLayer and should not be built on it.
 
+**As built (Stage 4), the frontend computes no preview at all.** The create
+wizard fetches each evidence document to check its `schema` literal and show it
+to the filer, and the case view fetches the constitution to resolve a cited rule
+id to its text. Neither produces an outcome, and nothing either one derives is
+ever submitted. The `outcome → final_status` mapping is mirrored in
+`frontend/src/config.ts` for display and for verifying what the contract
+recorded — never to compute a value the contract adopts.
+
 ## 5. Lifecycle — LOCKED
 
 ```
@@ -413,10 +421,36 @@ constitutioncourt/
 ├── contracts/            constitution_court.py — Stage 2
 ├── docs/                 ARCHITECTURE, THREAT-MODEL, BUILD-PLAN
 ├── evidence/             schema.md, validate.py, four fixture cases
-├── frontend/             Stage 4 — read-only case viewer + case creation
+├── frontend/             Stage 4 — case viewer + creation wizard
+│   ├── src/contract/     byte-identical copy of the contract, deployed via ?raw
+│   ├── src/lib/          validation, evidence, actions, preflight,
+│   │                     postconditions, deployment, registry, rules
+│   ├── src/state/        wallet (injected provider only), live-read hooks
+│   ├── src/pages/        the six locked routes
+│   └── e2e/              reproducibility, encoding, smoke, a11y, sweep
 ├── tests/direct/         Stage 3 — offline direct-mode suite
 └── .github/workflows/    CI
 ```
+
+### Frontend architecture — as built
+
+React 18 + TypeScript + Vite 6, `react-router-dom` for the six locked routes,
+`genlayer-js` pinned to 1.1.8. **No backend and no database**: the contract is
+the only authoritative store, and a server-side index would immediately become a
+second source of truth that can disagree with the chain. The case list is
+browser-local `localStorage` and is treated as a bookmark, never as a claim —
+roles are always re-derived from live contract state.
+
+Wallet access is through the injected provider only. Reading every route works
+with no wallet at all, which is deliberate: a reviewer must be able to audit a
+case without installing anything.
+
+`frontend/src/contract/constitution_court.py` is a byte-identical copy of
+`contracts/constitution_court.py`, imported with Vite's `?raw` and submitted as
+the deploy payload. Both paths are LF-pinned in `.gitattributes` and
+`e2e/reproducibility.mjs` asserts the copy, the CRLF absence and the recorded
+`CONTRACT_SOURCE_SHA256` on every CI run — see
+[T-3](THREAT-MODEL.md#t-3-consensus-split-through-non-determinism).
 
 ## 12. Deployment posture
 
