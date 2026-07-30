@@ -8,7 +8,7 @@ starts before the earlier stage's exit condition is met.
 | 1     | Repository, pins, architecture lock         | ✅ **Complete** |
 | 2     | Contract implementation                     | ✅ **Complete** |
 | 3     | Direct-mode test suite                      | ✅ **Complete** |
-| 4     | Frontend                                    | Not started    |
+| 4     | Frontend                                    | ✅ **Complete** |
 | 5     | Deployment                                  | Not started — requires explicit approval |
 
 ---
@@ -150,6 +150,58 @@ Requirements carried from the threat model:
 **Exit condition:** typecheck, lint, unit tests and build all green; reproducibility
 check confirms the embedded contract hashes identically on Windows and Linux CI.
 
+### Delivered
+
+Six locked routes — `/`, `/create`, `/cases`, `/case/:contractAddress`, `/demo`,
+`/help` — plus a 404. **334 unit tests** across 17 files, and five offline or
+browser suites: reproducibility, calldata encoding, browser smoke, accessibility
+(zero serious/critical axe violations at 1280px and 375px), and an
+overflow/console sweep across five viewports.
+
+No backend, no database. The case registry is browser-local `localStorage`, and
+that is an architectural limit rather than a missing feature: a server-side index
+would immediately become a second source of truth that can disagree with the
+chain.
+
+**Nothing is deployed.** Every browser suite blocks all outbound requests except
+localhost, so the RPC is unreachable by construction — no GenLayer network, no
+wallet signature, no GEN. The wallet used in browser tests is a mock that throws
+on any request that would need a signature.
+
+### Transaction safety carried forward from App 1
+
+Each of these exists because of a specific pilot incident, and each has a test:
+
+| Rule | Where |
+| ---- | ----- |
+| A hash means submitted, not successful | `chain.ts` `classifyTx`, `TxPanel` |
+| `FINISHED_WITH_ERROR` renders as failure | `classifyTx`, `TxPanel` |
+| FINALIZED with no execution result is *unknown*, not success | `classifyTx` |
+| Pending hashes persisted before polling; tracking resumes after reload | `registry.ts`, `hooks.ts` |
+| Single-flight polling, never `setInterval` with an async callback | `useLiveCase`, `useWriteAction` |
+| Availability re-derived before the dialog **and** before submit | `preflight.ts`, `CasePage` |
+| Postconditions bound to an exact transaction hash **and** method | `postconditions.ts` `postconditionApplies` |
+| Previous postcondition cleared when a new action begins | `CasePage.openDialog` |
+| Changing contract address clears all local action and transaction state | `CasePage` address effect |
+| An address argument reaches GenVM as `Address`, never a string | `chain.ts` `addressArg`, `e2e/encoding.mjs` |
+
+### Deployment verification
+
+A finalized deploy transaction is not proof a case exists — App 1 saw one
+finalize with `FINISHED_WITH_RETURN`, every validator agreeing, and no contract
+at the named address. `lib/deployment.ts` therefore runs **fourteen** checks in
+order and reports every check after a failure as *not reached* rather than as
+passing: finalized · execution · address · code · source hash · state readable ·
+challenger · respondent · title · all four evidence URLs · status OPEN · response
+empty · outcome and final status empty · `created_at` populated.
+
+### Accessibility fix worth recording
+
+The first axe run found a genuine defect: the horizontally scrollable table
+wrappers were unreachable by keyboard at 375px, hiding real content from anyone
+not using a mouse. Fixed with a shared `TableWrap` component carrying
+`tabIndex={0}`, `role="region"` and an accessible name.
+
 ## Stage 5 — Deployment
 
 **Requires explicit approval. Not authorized as of Stage 1.**
@@ -188,6 +240,8 @@ Recorded so they are not silently rediscovered later.
 | 2026-07-27 | `pytest==9.0.3`                                  | `genlayer-test` depends on pytest with no upper bound; pinning here is what actually fixes the version. Verified on CPython 3.14.3. |
 | 2026-07-27 | Runner `py-genlayer:1jb45aa8…jpz09h6`            | Pinned hash. `:test` and `:latest` are local-Studio aliases that all GenLayer networks reject. |
 | 2026-07-29 | `genvm-linter==0.11.0`                           | Provides the `genvm-lint` console script (package name and script name differ). Stage 2's exit condition is a clean lint, so the tool is pinned like everything else it gates. |
+| 2026-07-30 | `vitest==3.2.4` — **not** the 2.1.8 planned at Stage 1 | vitest 2.1.8 depends on `vite ^5.0.0`, so it installs and runs tests through its own nested vite 5.4.21 while `vite build` ships a vite 6.0.7 bundle. Tests would then exercise a different transform pipeline than production, which is the kind of gap a test suite is supposed to close rather than open. vitest 3.x accepts `vite ^6`, so a single vite 6.0.7 serves both. Every other Stage 1 frontend pin is honoured exactly: `genlayer-js` 1.1.8, `react`/`react-dom` 18.3.1, `typescript` 5.7.2, `vite` 6.0.7. |
+| 2026-07-30 | `@types/node==22.10.5` added                      | `vitest.setup.ts` imports `node:crypto` to supply WebCrypto, which jsdom lacks. `lib/hash.ts` deliberately has no polyfill — a missing SubtleCrypto in a real browser should fail loudly rather than silently skip the source-hash check — so the shim lives in test setup and needs node types. |
 | 2026-07-30 | GenVM SDK `v0.2.16` (`tests/direct/conftest.py`) | **Not** the harness default. Unset, the harness uses the newest version already in `~/.cache/gltest-direct` and falls back to GitHub's "latest" genvm release only when that cache is empty. "latest" currently resolves to a `v0.3.0-rc` candidate that ships no `genvm-universal.tar.xz` asset, so a clean runner 404s and every deploying test fails — which is precisely what the first CI run of this suite did while the same commit was green locally on a cache warmed by App 1. v0.2.16 is the release containing the runner hash pinned in the contract header, so the two pins agree by construction. |
 
 ## Architecture change log
@@ -205,3 +259,4 @@ what it merely reports.
 | 2026-07-30 | Custody check strips comment lines before matching     | The guard grepped for `payable` and matched the contract's own sentence documenting that it *has* no payable method, so the job failed on the file that states the rule it enforces. This is the same self-match that broke App 1's secret scanner, and the fix is the same shape: keep the pattern, exclude the line that defines it. Verified against a probe file with a real `@gl.public.payable` — still caught. |
 | 2026-07-30 | Direct-mode suite no longer tolerates exit code 5      | Zero collected tests was the expected Stage 1 result. With the suite in place, a collection error that left nothing to run would otherwise turn the job green while testing nothing. |
 | 2026-07-30 | `genvm-lint` job added                                 | Stage 2's exit condition is a clean lint and `requirements.txt` already promised CI ran it, but no job did. Offline; it reads the contract and does not deploy it. |
+| 2026-07-30 | `frontend` and `frontend-browser` jobs added           | Stage 4's gates: lint, typecheck, unit tests, production build, reproducibility, calldata encoding; then browser smoke, accessibility and the overflow sweep. `npm ci` installs strictly from the lockfile so a package.json/lock disagreement fails rather than resolving silently. The browser suites block every outbound request except localhost, so CI cannot reach a GenLayer network even by accident. |
