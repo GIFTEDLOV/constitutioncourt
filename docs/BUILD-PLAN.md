@@ -211,12 +211,32 @@ wallet signature, neither of which happens without a direct instruction.
 
 Preconditions before deployment is even proposed:
 
-1. Evidence fixtures published at stable HTTPS URLs, recorded in
-   `evidence/README.md`
-2. Integration tests written and passing against a live network
-3. Contract source hash recorded and verified identical across platforms
+1. ~~Evidence fixtures published at stable HTTPS URLs, recorded in
+   `evidence/README.md`~~ — ✅ **Closed 2026-07-31.** All eighteen documents are
+   served from `raw.githubusercontent.com` pinned to commit `1d1174e`, a full
+   40-character SHA. Every URL and its SHA-256 is recorded in
+   [evidence/README.md](../evidence/README.md); all eighteen returned HTTP 200
+   with matching hashes and no CRLF. `frontend/e2e/fixtures.mjs` re-fetches and
+   re-checks them in CI, and also fails if any evidence URL anywhere pins to a
+   branch instead of a commit.
+2. Integration tests written and passing against a live network — **open**
+3. ~~Contract source hash recorded and verified identical across platforms~~ —
+   ✅ `bf845bc4…`, asserted on Windows and Linux CI by `e2e/reproducibility.mjs`
 4. `docs/DEPLOY.md` written with the exact command sequence and the expected
-   contract address derivation
+   contract address derivation — **open**
+
+### Why the fixture pin is a commit and never a branch
+
+The contract stores a URL; it cannot store what that URL serves. Validators
+fetch at *ruling* time, which can be far later than filing, so a `main` URL
+would let the adjudicated document change after a case was filed — and a
+document that moves *while* validators fetch can give different validators
+different bytes, splitting consensus on a difference nobody intended.
+
+This is not hypothetical for this product: `checkEvidenceUrl` warns whenever an
+evidence URL uses a branch or tag, so shipping branch-pinned fixtures would have
+meant publishing links the application itself tells users not to use.
+`src/fixtures.test.ts` asserts the published URLs raise no such warning.
 
 ---
 

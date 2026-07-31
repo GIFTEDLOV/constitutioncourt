@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "ConstitutionCourt — governance-compliance adjudicator. Read-only case viewer plus case creation.",
+  "description": "ConstitutionCourt \u2014 governance-compliance adjudicator. Read-only case viewer plus case creation.",
   "scripts": {
     "dev": "vite --port 3100 --strictPort",
     "build": "tsc --noEmit && vite build",
@@ -15,7 +15,8 @@
     "e2e:encoding": "node e2e/encoding.mjs",
     "a11y": "node e2e/a11y.mjs",
     "sweep": "node e2e/sweep.mjs",
-    "repro": "node e2e/reproducibility.mjs"
+    "repro": "node e2e/reproducibility.mjs",
+    "fixtures": "node e2e/fixtures.mjs"
   },
   "dependencies": {
     "genlayer-js": "1.1.8",

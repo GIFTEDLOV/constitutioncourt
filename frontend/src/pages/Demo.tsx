@@ -12,8 +12,15 @@
  */
 
 import { Link } from 'react-router-dom';
-import { DEMO_CASES, REPO, EVIDENCE_COMMIT } from '../config';
+import { DEMO_CASES, REPO, EVIDENCE_COMMIT, fixtureUrl } from '../config';
 import { Badge, Ext, Notice, Panel } from '../components/Primitives';
+
+/** The documents a case pins, in order. The response exists only for some. */
+function documentsFor(dir: string, hasResponse: boolean) {
+  const files = ['constitution.json', 'proposal.json', 'vote-record.json', 'notice-record.json'];
+  if (hasResponse) files.push('response.json');
+  return files.map((file) => ({ file, url: fixtureUrl(dir, file) }));
+}
 
 export function Demo() {
   return (
@@ -64,11 +71,24 @@ export function Demo() {
               <p className="small muted">No rules cited as violated.</p>
             )}
 
-            <p className="small">
-              <Ext href={`${REPO}/tree/${EVIDENCE_COMMIT}/${c.dir}`}>
-                Read the evidence documents
-              </Ext>
-            </p>
+            <details>
+              <summary>The exact documents validators fetch</summary>
+              <ul className="small">
+                {documentsFor(c.dir, c.hasResponse).map((d) => (
+                  <li key={d.file}>
+                    <Ext href={d.url}>{d.file}</Ext>
+                  </li>
+                ))}
+              </ul>
+              <p className="small muted">
+                Every URL is pinned to commit{' '}
+                <span className="mono">{EVIDENCE_COMMIT.slice(0, 7)}</span>, never to a branch, so
+                what it serves cannot change. Hashes are recorded in{' '}
+                <Ext href={`${REPO}/blob/${EVIDENCE_COMMIT}/evidence/README.md`}>
+                  evidence/README.md
+                </Ext>.
+              </p>
+            </details>
 
             {c.address ? (
               <Link className="btn" to={`/case/${c.address}`}>Open the live case</Link>

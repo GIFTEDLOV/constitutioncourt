@@ -265,6 +265,33 @@ jobs:
       - name: Overflow and console sweep
         run: npm run sweep
 
+  fixtures:
+    name: Published evidence fixtures — reachable and unchanged
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      # Full history: the check compares the served bytes against the committed
+      # blob at the pinned commit, which a shallow clone would not contain.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # The one suite that must reach the internet — "is this URL actually
+      # fetchable" cannot be answered offline. It touches
+      # raw.githubusercontent.com only: no GenLayer network, no wallet, no GEN.
+      #
+      # It exists because a table of hashes nobody re-verifies is a table of
+      # hashes that quietly goes stale, and because a branch-pinned evidence URL
+      # is the one filing mistake the contract cannot protect against.
+      - name: Verify every published fixture URL
+        run: npm run fixtures
+
   genvm-lint:
     name: Contract validation — genvm-lint
     runs-on: ubuntu-latest
