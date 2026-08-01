@@ -128,18 +128,27 @@ def test_describe_never_leaks_a_key(monkeypatch):
     secret = "0x" + "d" * 64
     monkeypatch.setenv(config.ENV_CHALLENGER_KEY, secret)
     described = json.dumps(config.describe())
-    assert "challenger_key_present" in described
+    # The summary reports *how* the party signs, never the material itself.
+    assert '"challenger_signing": "raw-key"' in described
+    assert '"uses_raw_keys": true' in described
     assert secret not in described
     assert "d" * 20 not in described
 
 
 def test_credentials_reports_presence_only(monkeypatch):
+    for var in (config.ENV_CHALLENGER_ACCOUNT, config.ENV_RESPONDENT_ACCOUNT):
+        monkeypatch.delenv(var, raising=False)
     monkeypatch.setenv(config.ENV_CHALLENGER_KEY, "0xdead")
     monkeypatch.delenv(config.ENV_RESPONDENT_KEY, raising=False)
     creds = config.credentials()
     assert creds.challenger_present is True
     assert creds.respondent_present is False
     assert not creds.both_present
+    # The dataclass carries selectors and modes, never key material.
+    assert set(vars(creds)) == {
+        "challenger_mode", "respondent_mode",
+        "challenger_selector", "respondent_selector",
+    }
 
 
 def test_no_key_is_hard_coded_anywhere_in_the_package():

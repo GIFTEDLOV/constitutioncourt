@@ -233,14 +233,18 @@ def verify_deployment(
 # ------------------------------------------------------------- postconditions
 
 
-def verify_responded(
+def verify_response_recorded(
     state: Mapping[str, Any],
     sources: Mapping[str, Any],
     expected_response_url: str,
 ) -> Verification:
+    """The response facts that stay true for the life of the case.
+
+    Deliberately says nothing about the current status. A case that has since
+    been ruled is RULED, and asserting RESPONDED there would fail on a case that
+    did exactly what it was supposed to.
+    """
     v = Verification()
-    v.add("status", "Status is RESPONDED", str(state.get("status")) == "RESPONDED",
-          f"status={state.get('status')}")
     v.add("response_url", "Response URL matches exactly",
           str(sources.get("response_url", "")) == expected_response_url,
           f"on-chain={sources.get('response_url')!r}")
@@ -248,6 +252,25 @@ def verify_responded(
           f"has_response={state.get('has_response')}")
     v.add("responded_at", "responded_at populated", bool(str(state.get("responded_at", ""))),
           f"responded_at={state.get('responded_at')!r}")
+    return v
+
+
+def verify_responded(
+    state: Mapping[str, Any],
+    sources: Mapping[str, Any],
+    expected_response_url: str,
+) -> Verification:
+    """The postcondition of the `submit_response` transaction itself.
+
+    Includes the status assertion, so it is only correct immediately after that
+    transaction settles — before any ruling. Use `verify_response_recorded` when
+    checking a case that has moved on.
+    """
+    v = Verification()
+    v.add("status", "Status is RESPONDED", str(state.get("status")) == "RESPONDED",
+          f"status={state.get('status')}")
+    for check in verify_response_recorded(state, sources, expected_response_url).checks:
+        v.checks.append(check)
     return v
 
 

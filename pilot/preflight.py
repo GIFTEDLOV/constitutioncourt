@@ -20,6 +20,7 @@ from .fixtures import (
     CASES, PilotCase, all_urls_are_commit_pinned, verify_contract_source,
     verify_local_fixture_bytes, verify_manifest_against_readme,
 )
+from .keystore import keystore_dir
 from .record import PilotRecord
 
 
@@ -129,14 +130,22 @@ def run_preflight(
     # --- accounts, only for a write run ------------------------------------
     if check_accounts:
         creds = config.credentials()
-        report.add("challenger-key", "Challenger signing key present in the environment",
-                   creds.challenger_present,
-                   "present" if creds.challenger_present
-                   else f"set {config.ENV_CHALLENGER_KEY}")
-        report.add("respondent-key", "Respondent signing key present in the environment",
-                   creds.respondent_present,
-                   "present" if creds.respondent_present
-                   else f"set {config.ENV_RESPONDENT_KEY}")
+        for role, present, mode, selector, account_env in (
+            ("challenger", creds.challenger_present, creds.challenger_mode,
+             creds.challenger_selector, config.ENV_CHALLENGER_ACCOUNT),
+            ("respondent", creds.respondent_present, creds.respondent_mode,
+             creds.respondent_selector, config.ENV_RESPONDENT_ACCOUNT),
+        ):
+            if present and mode == config.SigningMode.KEYSTORE:
+                detail = f"keystore account {selector!r} (password entered at signing time)"
+            elif present:
+                detail = ("raw environment key — a named keystore account is safer; "
+                          f"prefer {account_env}")
+            else:
+                detail = (f"set {account_env} to a keystore account name or address "
+                          f"(keystores in {keystore_dir()})")
+            report.add(f"{role}-signing", f"{role.capitalize()} signing account configured",
+                       present, detail)
 
         if adapter is not None and challenger_address:
             try:

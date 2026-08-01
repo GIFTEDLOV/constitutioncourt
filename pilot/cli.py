@@ -21,8 +21,11 @@ from typing import List, Optional
 from . import config
 from .fixtures import CASES, canonical_contract_source, sha256_bytes
 from .preflight import run_preflight
+from .browser_pilot import BrowserPilotInputs, reconstruct
 from .record import PilotRecord
+from .keystore import KeystoreError, describe_accounts
 from .runner import PilotRunner, PilotStop
+from .signing import assert_distinct, resolve_challenger, resolve_respondent
 from .verify import (
     resolve_rule_ids, verify_citations_pinned, verify_responded, verify_ruled,
 )
@@ -57,16 +60,19 @@ def cmd_preflight(args) -> int:
 
     challenger = respondent = None
     if args.writes:
-        if not config.writes_enabled():
-            print(f"  Note: --writes given but {config.ENV_WRITES} is not set; account checks "
-                  "will report missing keys rather than unlocking anything.")
-        try:
-            if adapter and config.challenger_key():
-                challenger = adapter.account(config.challenger_key()).address
-            if adapter and config.respondent_key():
-                respondent = adapter.account(config.respondent_key()).address
-        except Exception as exc:  # noqa: BLE001
-            print(f"  (could not derive addresses: {exc})")
+        accounts = describe_accounts()
+        print(f"  keystore accounts available ({len(accounts)}):")
+        for a in accounts:
+            print(f"    {a['name']:<14} {a['address']}")
+        print()
+        # Expected addresses are public and can be checked without unlocking
+        # anything, so a read-only preflight never prompts for a password.
+        challenger = config.challenger_expected_address()
+        respondent = config.respondent_expected_address()
+        if not challenger or not respondent:
+            print("  Note: set "
+                  f"{config.ENV_CHALLENGER_ADDRESS} and {config.ENV_RESPONDENT_ADDRESS} to "
+                  "check balances without unlocking a keystore.")
 
     cases = [CASES[args.case]] if args.case else None
     report = run_preflight(
@@ -84,6 +90,12 @@ def cmd_preflight(args) -> int:
 
 
 def _require_write_gates() -> None:
+    if config.browser_signing():
+        raise SystemExit(
+            f"Refusing to sign: {config.ENV_SIGNING_MODE}={config.SIGNING_MODE_BROWSER} means "
+            "the operator signs in a browser wallet and this harness stays read-only. Use "
+            "`pilot record` to verify and write the pilot record from what the browser did."
+        )
     if not config.live_enabled():
         raise SystemExit(
             f"Refusing to run: set {config.ENV_LIVE}=1 to enable live operations."
@@ -115,31 +127,34 @@ def cmd_run(args, resuming: bool = False) -> int:
         )
 
     adapter = _adapter()
-    challenger_key = config.challenger_key()
-    respondent_key = config.respondent_key()
-    if not challenger_key:
-        raise SystemExit(f"{config.ENV_CHALLENGER_KEY} is not set.")
-    if case.response and not respondent_key:
-        raise SystemExit(
-            f"{config.ENV_RESPONDENT_KEY} is not set, and {case.key} needs a respondent "
-            "signature for its response step."
-        )
 
-    challenger = adapter.account(challenger_key)
-    respondent = adapter.account(respondent_key) if respondent_key else None
-    if respondent is None:
-        raise SystemExit(
-            f"{config.ENV_RESPONDENT_KEY} is required: the respondent address is a "
-            "constructor argument even when that party never signs."
-        )
+    # Resolved separately so the two parties can never collapse into one code
+    # path, and so each keystore password is prompted for on its own.
+    try:
+        challenger_signer = resolve_challenger(adapter.account)
+        respondent_signer = resolve_respondent(adapter.account)
+        assert_distinct(challenger_signer, respondent_signer)
+    except KeystoreError as exc:
+        raise SystemExit(str(exc)) from exc
+
+    challenger = challenger_signer.account
+    respondent = respondent_signer.account
 
     print(f"Case {case.key}: {case.lifecycle}")
-    print(f"  challenger {challenger.address}")
-    print(f"  respondent {respondent.address}")
+    print(f"  challenger {challenger_signer.address}  "
+          f"[{challenger_signer.mode}"
+          + (f": {challenger_signer.account_name}]" if challenger_signer.account_name else "]"))
+    print(f"  respondent {respondent_signer.address}  "
+          f"[{respondent_signer.mode}"
+          + (f": {respondent_signer.account_name}]" if respondent_signer.account_name else "]"))
+    if challenger_signer.mode == config.SigningMode.RAW_KEY \
+            or respondent_signer.mode == config.SigningMode.RAW_KEY:
+        print("  WARNING: signing from a raw environment key. A named keystore account is "
+              "safer — see docs/DEPLOY.md.")
 
     report = run_preflight(
         adapter=adapter, cases=[case], check_accounts=True,
-        challenger_address=challenger.address, respondent_address=respondent.address,
+        challenger_address=challenger_signer.address, respondent_address=respondent_signer.address,
         resuming=resuming,
     )
     if not report.ok:
@@ -152,7 +167,7 @@ def cmd_run(args, resuming: bool = False) -> int:
         expected_final_status=case.expected_final_status,
         expected_rule_ids=list(case.expected_rule_ids),
     )
-    record.record_accounts(challenger.address, respondent.address)
+    record.record_accounts(challenger_signer.address, respondent_signer.address)
     record.record_evidence([
         {"role": d.role, "filename": d.filename, "url": d.url(case.case_dir),
          "sha256": d.sha256, "bytes": d.size}
@@ -167,7 +182,7 @@ def cmd_run(args, resuming: bool = False) -> int:
             print(f"  contract already deployed at {address}")
         else:
             address = runner.deploy_case(
-                case, challenger, challenger.address, respondent.address,
+                case, challenger, challenger_signer.address, respondent_signer.address,
                 adapter.address_arg,
             )
             print(f"  deployed and verified: {address}")
@@ -250,6 +265,51 @@ def cmd_verify(args) -> int:
     return 0 if v.ok and pinned.ok else 1
 
 
+def cmd_record(args) -> int:
+    """Verify a browser-driven run and write its pilot record. Read-only.
+
+    Signs nothing and needs no account: every input is a public address or a
+    transaction hash the operator read off the screen.
+    """
+    case = CASES[args.case]
+    adapter = _adapter()
+    record = PilotRecord.load_or_create(case.key)
+
+    print(f"Reconstructing {case.key} read-only from live state")
+    print(f"  contract   {args.address}")
+    print(f"  challenger {args.challenger}")
+    print(f"  respondent {args.respondent}")
+    print()
+
+    results = reconstruct(
+        adapter,
+        BrowserPilotInputs(
+            case=case,
+            contract_address=args.address,
+            challenger_address=args.challenger,
+            respondent_address=args.respondent,
+            deploy_tx=args.deploy_tx,
+            response_tx=args.response_tx,
+            rule_tx=args.rule_tx,
+        ),
+        record,
+        log=print,
+    )
+
+    failed = 0
+    for step, verification in results.items():
+        print()
+        print(f"{step}:")
+        _print_checks(verification.checks)
+        failed += sum(1 for c in verification.checks if c.ok is False)
+
+    print()
+    print(f"Record written: {record.path}")
+    if failed:
+        print(f"{failed} check(s) did not pass — recorded as findings, not hidden.")
+    return 0 if failed == 0 else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="pilot", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -272,6 +332,19 @@ def build_parser() -> argparse.ArgumentParser:
     res = sub.add_parser("resume", help="continue an interrupted case")
     res.add_argument("case", choices=sorted(CASES))
     res.set_defaults(func=lambda a: cmd_run(a, resuming=True))
+
+    rec = sub.add_parser(
+        "record",
+        help="verify a browser-driven run and write its pilot record; signs nothing",
+    )
+    rec.add_argument("case", choices=sorted(CASES))
+    rec.add_argument("--address", required=True, help="deployed contract address")
+    rec.add_argument("--challenger", required=True, help="challenger address")
+    rec.add_argument("--respondent", required=True, help="respondent address")
+    rec.add_argument("--deploy-tx", dest="deploy_tx", help="deployment transaction hash")
+    rec.add_argument("--response-tx", dest="response_tx", help="submit_response hash")
+    rec.add_argument("--rule-tx", dest="rule_tx", help="rule() transaction hash")
+    rec.set_defaults(func=cmd_record)
 
     ver = sub.add_parser("verify", help="verify an existing contract; writes nothing")
     ver.add_argument("case", choices=sorted(CASES))
