@@ -222,8 +222,18 @@ Preconditions before deployment is even proposed:
 2. Integration tests written and passing against a live network — **open**
 3. ~~Contract source hash recorded and verified identical across platforms~~ —
    ✅ `bf845bc4…`, asserted on Windows and Linux CI by `e2e/reproducibility.mjs`
-4. `docs/DEPLOY.md` written with the exact command sequence and the expected
-   contract address derivation — **open**
+4. ~~`docs/DEPLOY.md` written with the exact command sequence and the expected
+   contract address derivation~~ — ✅ **Closed 2026-08-01.**
+   [DEPLOY.md](DEPLOY.md) is the authoritative runbook: scope and safety
+   boundary, environment, canonical contract source, the canonical pilot
+   fixture, constructor argument order, pre-deployment checklist, browser
+   procedure, the fourteen verification checks, failure classification with an
+   explicit retry-safety column, response and ruling procedures, evidence
+   capture, exact commands, stop conditions and post-pilot outputs.
+   `frontend/src/deploy-doc.test.ts` asserts it contains no branch-pinned
+   evidence URL, no unfilled placeholder, URLs and hashes matching
+   `evidence/README.md`, and a contract source hash matching the real file — so
+   the runbook cannot drift from the artefacts it describes without failing CI.
 
 ### Why the fixture pin is a commit and never a branch
 
