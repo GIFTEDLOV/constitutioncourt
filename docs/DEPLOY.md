@@ -122,19 +122,38 @@ parameters. See section 8.
 - Reading requires no wallet at all. A reviewer can audit any case with nothing
   installed.
 
-### Testnet GEN
+### Testnet GEN — measured, then a stated margin
 
-Recommend **at least 5 GEN** in the challenger wallet and **at least 2 GEN** in
-the respondent wallet before starting.
+Require **at least 1.0 GEN** for the challenger and **0.5 GEN** for the
+respondent.
 
-That is a headroom recommendation, not a measured figure — actual gas is
-recorded during the pilot and added to [BUILD-PLAN.md](BUILD-PLAN.md) afterwards.
-The reasoning: the deploy carries the full 32,043-byte contract source, which is
-the most expensive of the three writes; `submit_response` and `rule` are
-gas-only with no value transfer; and `rule` runs a non-deterministic block
-across five validators with up to three rotations, so its cost is the least
-predictable. Running out of gas mid-pilot wastes a full ~30-minute settlement
-cycle.
+**Measurement** (2026-08-01, read-only, from App 1's own Bradbury transactions
+via the explorer index and EVM receipts — 74 paid transactions from its
+challenger wallet):
+
+| Quantity | Measured range |
+| -------- | -------------- |
+| gas per transaction | 775,485 – 26,316,488 |
+| fee per transaction | 0.00010 – **0.05486** GEN |
+| gas price observed | 0.13 – 0.19 gwei |
+| **total for App 1's entire pilot** | **0.35135 GEN** |
+
+**Derivation.** This pilot needs 5 writes across two cases — 2 deploys, 1
+response, 2 rulings — and the live suite's negative checks submit up to ~5 more
+that revert. At 12 writes and the measured *maximum* fee:
+
+    12 × 0.05486 = 0.659 GEN
+
+**Headroom, stated separately.** The 1.0 GEN threshold is roughly 1.5× that
+worst case for the challenger, which signs everything; 0.5 GEN covers the
+respondent's single response with the same margin. The multiple absorbs gas
+price movement, which was observed to vary by ~45% across the sample — not an
+unknown cost model.
+
+The earlier 5.0 / 2.0 figures in this runbook were a guess made before any
+measurement existed. They were revised down because the measurement contradicted
+them. Running out of gas mid-pilot still wastes a full ~30-minute settlement
+cycle, which is why any margin exists at all.
 
 All three writes send `value: 0n`. This contract is never payable.
 
@@ -657,13 +676,53 @@ inspecting a preserved transaction — never something a script does on its own.
 `fixtures` job's `raw.githubusercontent.com` fetches remain its only network
 access. No CI job can reach a GenLayer network.
 
-### Credentials
+### Credentials — named keystore accounts, not raw keys
 
-Signing keys are read from `CONSTITUTIONCOURT_CHALLENGER_KEY` and
-`CONSTITUTIONCOURT_RESPONDENT_KEY` at the moment a signature is needed. Nothing
-is embedded, defaulted, logged or persisted; `pilot.config.describe()` reports
-only whether a key is *present*. `PilotRecord.save` refuses to write anything
-credential-shaped, including a bare 64-character hex value.
+Signing uses a **named local keystore account**. What lives in the environment
+is a *name or address*; the password is entered interactively at the moment of
+signing.
+
+```bash
+export CONSTITUTIONCOURT_CHALLENGER_ACCOUNT=deployer          # name or 0x address
+export CONSTITUTIONCOURT_RESPONDENT_ACCOUNT=provider
+export CONSTITUTIONCOURT_CHALLENGER_ADDRESS=0x…               # expected; verified on unlock
+export CONSTITUTIONCOURT_RESPONDENT_ADDRESS=0x…
+# optional; defaults to ~/.genlayer/keystores
+export CONSTITUTIONCOURT_KEYSTORE_DIR=/path/to/keystores
+```
+
+A raw private key in an environment variable is the wrong shape for this job:
+it lands in shell history, `env` dumps, process listings and any crash reporter
+that serialises `os.environ`, and it stays usable for the whole session rather
+than for the moment of signing. A Web3 Secret Storage v3 keystore inverts that —
+what is on disk is encrypted and useless without a password, what is in the
+environment is a name, and the plaintext key exists only inside `unlock()`.
+
+Safety properties, each with offline tests in `tests/harness/test_keystore.py`:
+
+- **names and addresses may be stored**; passwords and key material never are;
+- the password is read with `getpass` — never echoed, never an argument, never
+  an environment variable, never returned or stored on the result;
+- `CONSTITUTIONCOURT_*_ADDRESS` is verified on unlock, so unlocking the wrong
+  keystore **fails** rather than silently signing as somebody else;
+- ambiguous selectors stop the run rather than picking one;
+- a wrong password fails without echoing the password;
+- challenger and respondent are resolved by separate functions with separate
+  prompts, and `assert_distinct` refuses two identical addresses;
+- `PilotRecord.save` refuses anything credential-shaped, including a bare
+  64-character hex value.
+
+`CONSTITUTIONCOURT_CHALLENGER_KEY` / `_RESPONDENT_KEY` remain as a **discouraged
+fallback** for an unattended runner with no terminal to prompt on. When used,
+the CLI prints a warning and `describe()` reports `uses_raw_keys: true`.
+
+### Browser wallet as an alternative
+
+For a wholly manual pilot, the Stage 4 frontend signs through the injected
+browser wallet and never sees a key at all — the wallet holds it and prompts per
+transaction. That path is described in sections 7, 10 and 11. The Python suite
+exists for a repeatable, recorded run; the browser path exists for an operator
+who prefers the wallet to hold the key. Both reach the same contract.
 
 ### The operator command
 
