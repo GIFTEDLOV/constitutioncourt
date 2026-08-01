@@ -153,9 +153,20 @@ export async function verifyDeployment(input: VerifyInput): Promise<DeployVerifi
   }
   pass('execution', 'FINISHED_WITH_RETURN');
 
-  claimedAddress = receipt.contractAddress ?? receipt.recipient ?? null;
+  // Only `txDataDecoded.contractAddress` names the deployed contract. A deploy
+  // is submitted with `recipient: zeroAddress`, so the receipt's recipient is
+  // never the contract and must not be used as a fallback.
+  claimedAddress = receipt.contractAddress ?? null;
   if (!claimedAddress) {
-    fail('address', 'The finalized receipt names no contract address.');
+    fail('address', 'The finalized receipt names no contract address. '
+      + (receipt.recipient
+        ? `Its recipient is ${receipt.recipient}, which for a deploy is the zero address and `
+          + 'never the deployed contract.'
+        : ''));
+    return finish();
+  }
+  if (/^0x0{40}$/i.test(claimedAddress)) {
+    fail('address', 'The receipt names the zero address as the contract. Nothing was deployed.');
     return finish();
   }
   pass('address', claimedAddress);

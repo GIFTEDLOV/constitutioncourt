@@ -105,6 +105,20 @@ export function walletClient(address: string, provider: unknown) {
 
 // --------------------------------------------------------------------- reads
 
+/**
+ * Calldata decodes a contract `dict` to a JS `Map`; `jsonSafeReturn: true`
+ * converts it to a plain object, and every read here asks for that.
+ *
+ * This normalises a `Map` anyway, because the failure mode otherwise is silent
+ * and total: property access on a Map yields `undefined` for every key, so a
+ * case would render as blank strings and an empty status rather than as an
+ * error. A blank case that looks merely unread is far worse than a loud failure.
+ */
+function asRecord(raw: unknown): Record<string, unknown> {
+  if (raw instanceof Map) return Object.fromEntries(raw.entries());
+  return (raw ?? {}) as Record<string, unknown>;
+}
+
 export async function readCase(address: string): Promise<CaseState> {
   const c = readClient();
   const raw = (await c.readContract({
@@ -118,19 +132,34 @@ export async function readCase(address: string): Promise<CaseState> {
 
 export async function readEvidenceSources(address: string): Promise<EvidenceSources> {
   const c = readClient();
-  return (await c.readContract({
+  const raw = await c.readContract({
     address: address as `0x${string}`,
     functionName: 'get_evidence_sources',
     args: [],
     jsonSafeReturn: true,
-  })) as unknown as EvidenceSources;
+  });
+  // Same Map defence as `normalizeCaseState` — an evidence panel silently
+  // showing five blank URLs would look like a case with no evidence.
+  return asRecord(raw) as unknown as EvidenceSources;
 }
 
+/**
+ * Read the deployed source at an address.
+ *
+ * `getContractCode` takes the address **positionally**; the SDK wraps it into
+ * `[{ address }]` itself for non-Studio chains. Passing `{ address }` here
+ * produces a doubly-nested parameter that the node rejects, and because
+ * `verifyDeployment` treats a throw from this call as "no contract exists",
+ * every genuine deployment would have been reported as a ghost deployment.
+ *
+ * The previous version cast the client to an invented object-argument
+ * signature, so TypeScript could not catch it. It is called through the real
+ * client type now: a future SDK signature change becomes a compile error rather
+ * than a runtime surprise on a live deploy.
+ */
 export async function getContractCode(address: string): Promise<string> {
   const c = readClient();
-  const code = await (c as unknown as {
-    getContractCode: (a: { address: string }) => Promise<string>;
-  }).getContractCode({ address });
+  const code = await c.getContractCode(address as `0x${string}`);
   return typeof code === 'string' ? code : String(code ?? '');
 }
 
@@ -144,7 +173,7 @@ export async function getContractCode(address: string): Promise<string> {
  * would quietly shrink a ruling's stated basis.
  */
 export function normalizeCaseState(raw: unknown): CaseState {
-  const r = (raw ?? {}) as Record<string, unknown>;
+  const r = asRecord(raw);
   const str = (v: unknown): string => (typeof v === 'string' ? v : v == null ? '' : String(v));
   const ids = Array.isArray(r.violated_rule_ids) ? r.violated_rule_ids.map(str) : [];
 
@@ -313,6 +342,18 @@ export interface DeployReceipt {
   recipient: string | null;
 }
 
+/**
+ * Read a deploy receipt.
+ *
+ * The deployed address comes from `txDataDecoded.contractAddress` and nowhere
+ * else. `recipient` is **not** a fallback: `deployContract` submits the
+ * transaction with `recipient: zeroAddress`, so a deploy receipt's recipient is
+ * always `0x000…0`. Falling back to it would hand verification a syntactically
+ * valid address that belongs to no contract, turning "the receipt named no
+ * address" into a confusing "no contract exists at 0x000…0".
+ *
+ * It is still returned, for diagnostics only.
+ */
 export async function readDeployReceipt(hash: string): Promise<DeployReceipt | null> {
   let tx: RpcTx | null;
   try {
@@ -324,7 +365,7 @@ export async function readDeployReceipt(hash: string): Promise<DeployReceipt | n
   return {
     statusName: String(tx.statusName ?? tx.status ?? ''),
     executionResultName: String(tx.txExecutionResultName ?? ''),
-    contractAddress: tx.txDataDecoded?.contractAddress ?? tx.contractAddress ?? null,
+    contractAddress: tx.txDataDecoded?.contractAddress ?? null,
     recipient: tx.recipient ?? null,
   };
 }

@@ -131,6 +131,38 @@ describe('consensus alone is never enough', () => {
     expect(r.failed?.id).toBe('address');
   });
 
+  it('never falls back to the recipient, which is the zero address on a deploy', async () => {
+    // `deployContract` submits with `recipient: zeroAddress`, so a receipt's
+    // recipient is never the deployed contract. Falling back to it would hand
+    // verification a syntactically valid address belonging to no contract.
+    const r = await run(deps({
+      readDeployReceipt: vi.fn(async () => ({
+        statusName: 'FINALIZED',
+        executionResultName: 'FINISHED_WITH_RETURN',
+        contractAddress: null,
+        recipient: '0x0000000000000000000000000000000000000000',
+      })),
+    }));
+    expect(r.failed?.id).toBe('address');
+    expect(r.claimedAddress).toBeNull();
+    expect(r.failed?.detail).toMatch(/zero address/i);
+    // It must not have gone on to probe the chain at that address.
+    expect(r.checks.find((c) => c.id === 'code')?.ok).toBeNull();
+  });
+
+  it('rejects the zero address even when the receipt names it outright', async () => {
+    const r = await run(deps({
+      readDeployReceipt: vi.fn(async () => ({
+        statusName: 'FINALIZED',
+        executionResultName: 'FINISHED_WITH_RETURN',
+        contractAddress: '0x0000000000000000000000000000000000000000',
+        recipient: null,
+      })),
+    }));
+    expect(r.failed?.id).toBe('address');
+    expect(r.failed?.detail).toMatch(/nothing was deployed/i);
+  });
+
   it('fails when the transaction cannot be read at all', async () => {
     const r = await run(deps({ readDeployReceipt: vi.fn(async () => null) }));
     expect(r.failed?.id).toBe('finalized');

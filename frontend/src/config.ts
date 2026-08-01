@@ -159,8 +159,47 @@ export const MAX_TITLE_LEN = 200;
  */
 export const TYPICAL_SETTLE_SECONDS = 1900;
 
-/** Commit pinning the evidence fixtures used by /demo. */
-export const EVIDENCE_COMMIT = 'main';
+/**
+ * Commit pinning the published evidence fixtures — a full 40-character SHA,
+ * never a branch.
+ *
+ * This is load-bearing, not cosmetic. The contract stores the URL; it cannot
+ * store what that URL serves. Validators fetch at ruling time, which may be far
+ * later than filing, so a `main` reference would mean they adjudicate whatever
+ * the branch says then — and if it moves *while* they fetch, different
+ * validators can see different bytes and disagree. This application's own URL
+ * validator warns about exactly that class of URL, so pinning to a branch here
+ * would have had the app shipping evidence links it tells users not to use.
+ *
+ * `1d1174e` is the commit that introduced all eighteen fixture documents; they
+ * have not changed since. Every URL built from it is verified in
+ * `evidence/README.md` with its SHA-256, and `e2e/fixtures.mjs` re-fetches each
+ * one and re-checks the hash.
+ */
+export const EVIDENCE_COMMIT = '1d1174e9f30e8674c28ab41272125ea11d691d84';
+
+/** Owner/repo used to build raw fixture URLs. */
+export const REPO_SLUG = 'GIFTEDLOV/constitutioncourt';
+
+/**
+ * The immutable raw URL for one fixture document.
+ *
+ * `raw.githubusercontent.com/<owner>/<repo>/<40-hex commit>/<path>` is content-
+ * addressed by commit: the bytes it serves cannot change without the URL
+ * changing.
+ */
+export function fixtureUrl(dir: string, file: string): string {
+  return `https://raw.githubusercontent.com/${REPO_SLUG}/${EVIDENCE_COMMIT}/${dir}/${file}`;
+}
+
+/** The five document filenames, in the order a case pins them. */
+export const FIXTURE_FILES = [
+  'constitution.json',
+  'proposal.json',
+  'vote-record.json',
+  'notice-record.json',
+  'response.json',
+] as const;
 
 export interface DemoCase {
   id: string;
