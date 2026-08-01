@@ -21,6 +21,7 @@ from typing import List, Optional
 from . import config
 from .fixtures import CASES, canonical_contract_source, sha256_bytes
 from .preflight import run_preflight
+from .browser_pilot import BrowserPilotInputs, reconstruct
 from .record import PilotRecord
 from .keystore import KeystoreError, describe_accounts
 from .runner import PilotRunner, PilotStop
@@ -89,6 +90,12 @@ def cmd_preflight(args) -> int:
 
 
 def _require_write_gates() -> None:
+    if config.browser_signing():
+        raise SystemExit(
+            f"Refusing to sign: {config.ENV_SIGNING_MODE}={config.SIGNING_MODE_BROWSER} means "
+            "the operator signs in a browser wallet and this harness stays read-only. Use "
+            "`pilot record` to verify and write the pilot record from what the browser did."
+        )
     if not config.live_enabled():
         raise SystemExit(
             f"Refusing to run: set {config.ENV_LIVE}=1 to enable live operations."
@@ -258,6 +265,51 @@ def cmd_verify(args) -> int:
     return 0 if v.ok and pinned.ok else 1
 
 
+def cmd_record(args) -> int:
+    """Verify a browser-driven run and write its pilot record. Read-only.
+
+    Signs nothing and needs no account: every input is a public address or a
+    transaction hash the operator read off the screen.
+    """
+    case = CASES[args.case]
+    adapter = _adapter()
+    record = PilotRecord.load_or_create(case.key)
+
+    print(f"Reconstructing {case.key} read-only from live state")
+    print(f"  contract   {args.address}")
+    print(f"  challenger {args.challenger}")
+    print(f"  respondent {args.respondent}")
+    print()
+
+    results = reconstruct(
+        adapter,
+        BrowserPilotInputs(
+            case=case,
+            contract_address=args.address,
+            challenger_address=args.challenger,
+            respondent_address=args.respondent,
+            deploy_tx=args.deploy_tx,
+            response_tx=args.response_tx,
+            rule_tx=args.rule_tx,
+        ),
+        record,
+        log=print,
+    )
+
+    failed = 0
+    for step, verification in results.items():
+        print()
+        print(f"{step}:")
+        _print_checks(verification.checks)
+        failed += sum(1 for c in verification.checks if c.ok is False)
+
+    print()
+    print(f"Record written: {record.path}")
+    if failed:
+        print(f"{failed} check(s) did not pass — recorded as findings, not hidden.")
+    return 0 if failed == 0 else 1
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="pilot", description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -280,6 +332,19 @@ def build_parser() -> argparse.ArgumentParser:
     res = sub.add_parser("resume", help="continue an interrupted case")
     res.add_argument("case", choices=sorted(CASES))
     res.set_defaults(func=lambda a: cmd_run(a, resuming=True))
+
+    rec = sub.add_parser(
+        "record",
+        help="verify a browser-driven run and write its pilot record; signs nothing",
+    )
+    rec.add_argument("case", choices=sorted(CASES))
+    rec.add_argument("--address", required=True, help="deployed contract address")
+    rec.add_argument("--challenger", required=True, help="challenger address")
+    rec.add_argument("--respondent", required=True, help="respondent address")
+    rec.add_argument("--deploy-tx", dest="deploy_tx", help="deployment transaction hash")
+    rec.add_argument("--response-tx", dest="response_tx", help="submit_response hash")
+    rec.add_argument("--rule-tx", dest="rule_tx", help="rule() transaction hash")
+    rec.set_defaults(func=cmd_record)
 
     ver = sub.add_parser("verify", help="verify an existing contract; writes nothing")
     ver.add_argument("case", choices=sorted(CASES))

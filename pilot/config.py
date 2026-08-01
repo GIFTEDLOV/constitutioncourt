@@ -29,6 +29,18 @@ ENV_WRITES = "CONSTITUTIONCOURT_ALLOW_WRITES"
 #: Gate 3 — permit resuming a case that already has a record.
 ENV_RESUME = "CONSTITUTIONCOURT_RESUME"
 
+#: Signing mode for a run. `browser` hard-disables harness signing: the operator
+#: signs in a browser wallet and the harness stays read-only, verifying and
+#: recording only. Set it and no `run`/`resume` can submit anything, whatever
+#: else is configured — a belt to the write gates' braces.
+ENV_SIGNING_MODE = "CONSTITUTIONCOURT_SIGNING_MODE"
+SIGNING_MODE_BROWSER = "browser"
+
+
+def browser_signing() -> bool:
+    """True when the operator signs in a browser and the harness must not."""
+    return os.environ.get(ENV_SIGNING_MODE, "").strip().lower() == SIGNING_MODE_BROWSER
+
 #: Preferred: a keystore account **name** or **address**. Both are public and
 #: safe to store, log and commit. The password is never here — it is entered
 #: interactively at the moment of signing.
