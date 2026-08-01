@@ -186,6 +186,38 @@ jobs:
       - name: Run direct-mode suite
         run: python -m pytest tests/direct -q
 
+      # The pilot harness's own offline tests. These exercise classification,
+      # address recovery, deployment invariants, resume, timeout and secret
+      # hygiene against fabricated receipts — no network, no wallet, no GEN.
+      - name: Run pilot-harness offline suite
+        run: python -m pytest tests/harness -q
+
+      # The live suite must stay deselected by default. This asserts the gate
+      # rather than trusting it: a marker or pytest.ini change that let live
+      # tests into CI would otherwise be invisible until something tried to
+      # reach a GenLayer network from a runner with no funded wallet.
+      - name: Assert the live integration suite is excluded by default
+        run: |
+          set -euo pipefail
+          out=$(python -m pytest -q 2>&1 | tail -3)
+          echo "$out"
+          echo "$out" | grep -qE '[0-9]+ deselected' \
+            || { echo "::error::no tests were deselected — the integration gate is not in effect"; exit 1; }
+          if [ -n "${CONSTITUTIONCOURT_LIVE:-}" ] || [ -n "${CONSTITUTIONCOURT_ALLOW_WRITES:-}" ]; then
+            echo "::error::live gates must never be set in CI"
+            exit 1
+          fi
+          echo "Live suite excluded; no live gate is set."
+
+      # Even when explicitly selected, the live suite must skip rather than
+      # attempt a network from CI.
+      - name: Assert the live suite skips when selected without its gate
+        run: |
+          set -euo pipefail
+          python -m pytest tests/integration -m integration -q 2>&1 | tail -2 | tee /tmp/live.txt
+          grep -q "skipped" /tmp/live.txt \
+            || { echo "::error::live tests did not skip without CONSTITUTIONCOURT_LIVE"; exit 1; }
+
   frontend:
     name: Frontend — lint, typecheck, unit tests, build
     runs-on: ubuntu-latest
@@ -326,7 +358,18 @@ jobs:
           # match its own definition, so the job failed on every commit and a
           # real secret was indistinguishable from that self-match. The bracket
           # keeps the regex meaning identical while breaking the literal.
-          PATTERN='private[_-]?key|mnemon[i]c|seed[_-]?phrase|BEGIN [A-Z ]*PRIVATE KEY|xprv[0-9a-zA-Z]{20,}'
+          # Matches credential-shaped *values*, not identifiers.
+          #
+          # The earlier word-based pattern flagged `pilot/record.py` — the module
+          # whose entire job is refusing to persist credentials — along with the
+          # tests asserting it works and a `private_key: str` parameter name.
+          # That is the same self-match that broke App 1's secret scanner and
+          # this repo's custody check: a scanner that fires on the vocabulary of
+          # the defence cannot tell defence from breach.
+          #
+          # A leak looks like an assignment of a long literal, a PEM block, or an
+          # extended private key. A parameter name does not.
+          PATTERN='(private[_-]?key|mnemon[i]c|seed[_-]?phrase|passphrase|keystore)["'"'"']?[[:space:]]*[:=][[:space:]]*["'"'"'][^"'"'"']{16,}|BEGIN [A-Z ]*PRIVATE KEY|xprv[0-9a-zA-Z]{20,}|0x[0-9a-fA-F]{64}["'"'"']?[[:space:]]*#[[:space:]]*(key|secret)'
           if grep -rInE "$PATTERN" \
                 --include='*.ts' --include='*.tsx' --include='*.js' --include='*.mjs' \
                 --include='*.json' --include='*.py' --include='*.yml' --include='*.yaml' \

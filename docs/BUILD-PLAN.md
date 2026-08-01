@@ -219,7 +219,15 @@ Preconditions before deployment is even proposed:
    with matching hashes and no CRLF. `frontend/e2e/fixtures.mjs` re-fetches and
    re-checks them in CI, and also fails if any evidence URL anywhere pins to a
    branch instead of a commit.
-2. Integration tests written and passing against a live network — **open**
+2. Integration tests written and passing against a live network — **written
+   2026-08-01, not yet run.** The suite is implemented in `tests/integration/`
+   over the harness in `pilot/`, covering both canonical paths: CASE A
+   (`case-002`, `OPEN → RULED`) and CASE B (`case-003`,
+   `OPEN → RESPONDED → RULED`), both expecting `NON_COMPLIANT → REJECTED`.
+   107 offline tests exercise the harness itself. **The pilot execution is the
+   first live run**, because running it spends testnet GEN and requires unlocked
+   wallets — so "passing against a live network" is what the pilot establishes,
+   not something that can be claimed beforehand.
 3. ~~Contract source hash recorded and verified identical across platforms~~ —
    ✅ `bf845bc4…`, asserted on Windows and Linux CI by `e2e/reproducibility.mjs`
 4. ~~`docs/DEPLOY.md` written with the exact command sequence and the expected
@@ -234,6 +242,23 @@ Preconditions before deployment is even proposed:
    evidence URL, no unfilled placeholder, URLs and hashes matching
    `evidence/README.md`, and a contract source hash matching the real file — so
    the runbook cannot drift from the artefacts it describes without failing CI.
+
+### The live suite is opt-in, and default CI stays offline
+
+`tests/integration/` is gated three times: the `integration` marker is
+deselected by `pytest.ini`, `CONSTITUTIONCOURT_LIVE=1` is required for the tests
+to run at all, and `CONSTITUTIONCOURT_ALLOW_WRITES=1` is required separately
+before anything signs or spends. Resuming an interrupted run needs a fourth gate.
+
+Reading an environment variable is not consent to spend GEN, which is why the
+read and write gates are distinct. **CI sets none of them**, so no CI job can
+reach a GenLayer network; the `fixtures` job's `raw.githubusercontent.com`
+fetches remain the only network access in the pipeline.
+
+No credential is embedded, defaulted, logged or persisted. `PilotRecord.save`
+refuses to write anything credential-shaped — including a bare 64-character hex
+value, since that is exactly what a raw private key looks like — and the offline
+suite asserts it.
 
 ### Why the fixture pin is a commit and never a branch
 

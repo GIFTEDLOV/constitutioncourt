@@ -633,6 +633,66 @@ Record all of the following in `docs/pilot/PILOT-RUN.md`, per case:
 
 ---
 
+## 12a. The live integration suite
+
+The procedures in sections 7, 10 and 11 are implemented as an automated suite in
+`tests/integration/`, driven by the harness in `pilot/`. **The pilot execution
+is the first live run of that suite** — it has never been run against Bradbury,
+because doing so spends testnet GEN and requires unlocked wallets.
+
+### It is opt-in, three times over
+
+| Gate | Effect when unset |
+| ---- | ----------------- |
+| the `integration` pytest marker | deselected by `pytest.ini`'s `-m "not integration"` |
+| `CONSTITUTIONCOURT_LIVE=1` | every live test skips, even under an explicit `-m integration` |
+| `CONSTITUTIONCOURT_ALLOW_WRITES=1` | read-only tests run; nothing signs, nothing spends |
+
+Reading an environment variable is not consent to spend GEN, so the read gate
+and the write gate are separate. Resuming needs a fourth,
+`CONSTITUTIONCOURT_RESUME=1`, because resuming is a decision a human makes after
+inspecting a preserved transaction — never something a script does on its own.
+
+**Default CI remains entirely offline.** It sets none of these gates, and the
+`fixtures` job's `raw.githubusercontent.com` fetches remain its only network
+access. No CI job can reach a GenLayer network.
+
+### Credentials
+
+Signing keys are read from `CONSTITUTIONCOURT_CHALLENGER_KEY` and
+`CONSTITUTIONCOURT_RESPONDENT_KEY` at the moment a signature is needed. Nothing
+is embedded, defaulted, logged or persisted; `pilot.config.describe()` reports
+only whether a key is *present*. `PilotRecord.save` refuses to write anything
+credential-shaped, including a bare 64-character hex value.
+
+### The operator command
+
+```bash
+python -m pilot preflight                    # read-only; no wallet needed
+python -m pilot preflight case-002 --writes  # also check keys and balances
+python -m pilot run case-002                 # CASE A: deploy + rule
+python -m pilot run case-003                 # CASE B: deploy + respond + rule
+python -m pilot resume case-002              # continue an interrupted run
+python -m pilot verify case-002 --address 0x…  # verify; writes nothing
+```
+
+Records are written to `deploy/bradbury/case-002/` and `deploy/bradbury/case-003/`.
+
+### Serialisation
+
+The two cases share the challenger signer, so they are **never run in parallel**.
+Two writes from one account in flight at once is how a nonce collision becomes a
+mystery. The suite has no `pytest-xdist` usage and the modules are ordered.
+
+### On timeout or an unknown outcome
+
+The runner stops, preserves the hash in the record, guesses nothing, and resends
+nothing. Continuing requires the explicit resume gate after a human has
+inspected the transaction. That is the behaviour section 9 demands, implemented
+rather than merely described.
+
+---
+
 ## 13. Exact commands
 
 All run from the repository root unless stated. Every one has been executed.
@@ -648,8 +708,32 @@ cd frontend && npm ci
 
 ```bash
 genvm-lint contracts/constitution_court.py
-python -m pytest tests/direct -q
+python -m pytest tests/direct -q          # 247 offline contract tests
+python -m pytest tests/harness -q         # 107 offline pilot-harness tests
 python evidence/validate.py
+```
+
+### Pilot harness — offline
+
+```bash
+python -m pytest -q                       # everything offline; integration deselected
+python -m pilot preflight --offline       # artefact checks, no network, no wallet
+python -m pilot preflight                 # adds RPC and evidence-URL checks
+```
+
+### Pilot harness — live (spends testnet GEN; requires unlocked wallets)
+
+Not run before the pilot. Each gate is deliberate:
+
+```bash
+export CONSTITUTIONCOURT_LIVE=1                 # enable live reads
+python -m pytest tests/integration -m integration -q   # read-only live checks
+
+export CONSTITUTIONCOURT_ALLOW_WRITES=1         # permit spending
+export CONSTITUTIONCOURT_CHALLENGER_KEY=…       # never committed, never logged
+export CONSTITUTIONCOURT_RESPONDENT_KEY=…
+python -m pilot run case-002                    # CASE A
+python -m pilot run case-003                    # CASE B
 ```
 
 On Windows, `genvm-lint` may not be on `PATH`; resolve it with:
