@@ -13,7 +13,7 @@
 
 import { Link } from 'react-router-dom';
 import { DEMO_CASES, REPO, EVIDENCE_COMMIT, fixtureUrl } from '../config';
-import { Badge, Ext, Notice, Panel } from '../components/Primitives';
+import { Ext, Notice, Panel } from '../components/Primitives';
 
 /** The documents a case pins, in order. The response exists only for some. */
 function documentsFor(dir: string, hasResponse: boolean) {
@@ -44,17 +44,28 @@ export function Demo() {
         </p>
       </Notice>
 
-      <div className="grid grid-2">
-        {DEMO_CASES.map((c) => (
-          <Panel key={c.id} title={c.label}>
-            <div className="btn-row" style={{ marginBottom: '0.75rem' }}>
-              <Badge kind={c.expected.final}>{c.expected.final}</Badge>
-              <span className="mono small">{c.expected.outcome}</span>
-              {c.hasResponse ? (
-                <span className="small muted">respondent answered</span>
-              ) : (
-                <span className="small muted">no response — ruled from OPEN</span>
-              )}
+      <ol className="rows">
+        {DEMO_CASES.map((c, i) => (
+          <li className="row" key={c.id} style={{ gridTemplateColumns: '1fr' }}>
+            <span className="row-n" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+            <div>
+              <h2 className="row-title">{c.label}</h2>
+              <p className="eyebrow" style={{ margin: 'var(--s2) 0 0' }}>
+                Expected fixture outcome — not a live ruling
+              </p>
+              <p
+                className="status-type"
+                data-kind={c.expected.final}
+                style={{ fontSize: 'clamp(28px, 4vw, 64px)', margin: 'var(--s1) 0 0' }}
+              >
+                {c.expected.final}
+              </p>
+              <p className="mono small" style={{ margin: 'var(--s1) 0 0' }}>
+                {c.expected.outcome}
+                {c.hasResponse
+                  ? ' · respondent answered'
+                  : ' · no response — ruled from OPEN'}
+              </p>
             </div>
 
             <p>{c.blurb}</p>
@@ -98,9 +109,9 @@ export function Demo() {
                 the ruling shown is read from the chain rather than from this page.
               </p>
             )}
-          </Panel>
+          </li>
         ))}
-      </div>
+      </ol>
 
       <Panel title="Why these four">
         <p>

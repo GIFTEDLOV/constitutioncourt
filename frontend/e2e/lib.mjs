@@ -21,6 +21,8 @@ export const ROUTES = [
   { path: '/create', name: 'create wizard' },
   { path: '/cases', name: 'my cases' },
   { path: '/demo', name: 'worked examples' },
+  { path: '/consensus', name: 'how consensus works' },
+  { path: '/about', name: 'about' },
   { path: '/help', name: 'how it works' },
   { path: '/case/0xAAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaA', name: 'case view' },
   { path: '/nowhere', name: '404' },

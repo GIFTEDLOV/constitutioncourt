@@ -12,7 +12,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { listCases, removeCase, upsertCase, REGISTRY_EVENT, type CaseEntry } from '../lib/registry';
 import { isAddress } from '../lib/validation';
-import { Badge, Notice, Panel, TableWrap } from '../components/Primitives';
+import { Notice, Panel } from '../components/Primitives';
 import { shortAddress } from '../lib/format';
 
 export function Cases() {
@@ -93,45 +93,51 @@ export function Cases() {
           </div>
         </Panel>
       ) : (
-        <Panel title={`${cases.length} case${cases.length === 1 ? '' : 's'}`}>
-          <TableWrap label="Cases known to this browser">
-            <table>
-              <caption className="visually-hidden">Cases known to this browser</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Case</th>
-                  <th scope="col">Address</th>
-                  <th scope="col">Last seen status</th>
-                  <th scope="col">Added</th>
-                  <th scope="col"><span className="visually-hidden">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody>
-                {cases.map((c) => (
-                  <tr key={c.address}>
-                    <th scope="row">
-                      <Link to={`/case/${c.address}`}>{c.title || 'Untitled case'}</Link>
-                      {c.via === 'created' ? (
-                        <span className="small muted"> · filed here</span>
-                      ) : null}
-                    </th>
-                    <td className="mono small">{shortAddress(c.address)}</td>
-                    <td>
-                      {c.lastStatus ? (
-                        <>
-                          <Badge kind={c.lastStatus}>{c.lastStatus}</Badge>
-                          {c.lastOutcome ? (
-                            <span className="small muted"> {c.lastOutcome}</span>
-                          ) : null}
-                        </>
-                      ) : (
-                        <span className="muted small">not read yet</span>
-                      )}
-                    </td>
-                    <td className="small muted">
-                      {new Date(c.addedAt).toISOString().slice(0, 10)}
-                    </td>
-                    <td>
+        <section>
+          <h2 className="panel-title">
+            {`${cases.length} case${cases.length === 1 ? '' : 's'}`}
+          </h2>
+          {/*
+            Full-width rows separated by hairlines, not cards. The respondent is
+            deliberately absent: this registry is browser-local by design and
+            stores only what a listing needs, so showing a respondent would mean
+            either a network read per row or widening what the registry keeps.
+          */}
+          <ul className="case-rows">
+            {cases.map((c) => (
+              <li className="case-row" key={c.address}>
+                <h3 className="case-row-title">
+                  <Link to={`/case/${c.address}`}>{c.title || 'Untitled case'}</Link>
+                  {c.via === 'created' ? (
+                    <span className="small muted"> · filed here</span>
+                  ) : null}
+                </h3>
+
+                <p className={`case-row-status status-type badge-${(c.lastStatus ?? '').toLowerCase()}`}
+                  data-kind={c.lastStatus ?? undefined}
+                >
+                  {c.lastStatus ?? <span className="muted small">Not read yet</span>}
+                  {c.lastOutcome ? (
+                    <span className="small muted"> {c.lastOutcome}</span>
+                  ) : null}
+                </p>
+
+                <dl className="case-row-meta">
+                  <div>
+                    <dt>Address</dt>
+                    <dd className="mono">{shortAddress(c.address)}</dd>
+                  </div>
+                  <div>
+                    <dt>Last known</dt>
+                    <dd>
+                      <time dateTime={new Date(c.refreshedAt ?? c.addedAt).toISOString()}>
+                        {new Date(c.refreshedAt ?? c.addedAt).toISOString().slice(0, 10)}
+                      </time>
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Forget</dt>
+                    <dd>
                       <button
                         type="button"
                         className="btn"
@@ -140,17 +146,17 @@ export function Cases() {
                         Forget
                         <span className="visually-hidden"> {c.title || c.address}</span>
                       </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableWrap>
-          <p className="small muted">
+                    </dd>
+                  </div>
+                </dl>
+              </li>
+            ))}
+          </ul>
+          <p className="small muted" style={{ marginTop: 'var(--s3)' }}>
             &ldquo;Last seen status&rdquo; is what this browser read when it last looked, not a live
             value. Open a case to read it from the contract.
           </p>
-        </Panel>
+        </section>
       )}
     </div>
   );
