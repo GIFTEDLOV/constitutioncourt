@@ -70,6 +70,14 @@
 html {
   -webkit-text-size-adjust: 100%;
   scroll-behavior: smooth;
+  /*
+   * The hero marquee bleeds past the text column by design, and at very narrow
+   * widths font metrics differ enough between platforms to push the document a
+   * few pixels wider than the viewport. `clip` removes the horizontal scroll
+   * without creating a scroll container, so the sticky masthead keeps working —
+   * `hidden` here would break it.
+   */
+  overflow-x: clip;
 }
 
 body {
@@ -80,7 +88,7 @@ body {
   font-size: 16px;
   font-weight: 400;
   line-height: 1.55;
-  overflow-x: hidden;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
 }
 
