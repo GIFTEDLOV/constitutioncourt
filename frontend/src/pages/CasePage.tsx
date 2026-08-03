@@ -247,13 +247,22 @@ export function CasePage() {
 
   return (
     <div className="page">
-      <h1>{st.case_title || 'Untitled case'}</h1>
-      <p className="btn-row" style={{ marginBottom: '1.5rem' }}>
-        <Badge kind={st.status}>{st.status}</Badge>
-        {st.final_status ? <Badge kind={st.final_status}>{st.final_status}</Badge> : null}
-        <span className="mono small">
-          <Ext href={explorerAddress(address)}>{address}</Ext>
-        </span>
+      {/*
+        The showcase header: the title and the current status are the two things
+        a reader came for, so they are set at display scale. Status is still a
+        text label — the accent is a second cue on top of the word, never the
+        word's replacement.
+      */}
+      <span className="eyebrow">Case record</span>
+      <h1 style={{ maxWidth: '18ch' }}>{st.case_title || 'Untitled case'}</h1>
+
+      <p className="status-type" data-kind={st.status}>{st.status}</p>
+      {st.final_status ? (
+        <p className="status-type" data-kind={st.final_status}>{st.final_status}</p>
+      ) : null}
+
+      <p className="mono small" style={{ marginTop: 'var(--s3)', marginBottom: 'var(--s5)' }}>
+        <Ext href={explorerAddress(address)}>{address}</Ext>
       </p>
 
       {supersededBy ? (
@@ -268,6 +277,24 @@ export function CasePage() {
 
       <Panel title="Lifecycle">
         <Lifecycle status={st.status} hasResponse={st.has_response} />
+        {/*
+          Both routes to a ruling, shown together and plainly. A respondent who
+          never answers does not stall the case — that is a locked property of
+          the contract, and stating it typographically is clearer than a note.
+        */}
+        <ul className="paths">
+          <li className="path">
+            <b>Open</b> → <b>Responded</b> → <b>Ruled</b>
+            <span className="path-note muted">The respondent publishes one permanent response.</span>
+          </li>
+          <li className="path">
+            <b>Open</b> → <b>Ruled</b>
+            <span className="path-note muted">
+              The respondent stays silent. Adjudication proceeds anyway — silence cannot block a
+              ruling.
+            </span>
+          </li>
+        </ul>
       </Panel>
 
       <div className="grid grid-2">

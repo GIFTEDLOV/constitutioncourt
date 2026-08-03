@@ -10,19 +10,28 @@ import { spawn } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import puppeteer from 'puppeteer';
 
-export const ORIGIN = 'http://localhost:3100';
+// Defaults to the local preview. Set TARGET_ORIGIN to run the same suites
+// against a deployed URL — used to verify a production deployment serves the
+// same behaviour as the gated build, not just the same bytes.
+export const TARGET_ORIGIN = process.env.TARGET_ORIGIN || '';
+export const ORIGIN = TARGET_ORIGIN || 'http://localhost:3100';
 
 export const ROUTES = [
   { path: '/', name: 'landing' },
   { path: '/create', name: 'create wizard' },
   { path: '/cases', name: 'my cases' },
   { path: '/demo', name: 'worked examples' },
+  { path: '/consensus', name: 'how consensus works' },
+  { path: '/about', name: 'about' },
   { path: '/help', name: 'how it works' },
   { path: '/case/0xAAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaAaA', name: 'case view' },
   { path: '/nowhere', name: '404' },
 ];
 
 export async function startPreview() {
+  // Nothing to start when targeting a remote origin.
+  if (TARGET_ORIGIN) return { kill() {} };
+
   const proc = spawn('npx', ['vite', 'preview', '--port', '3100', '--strictPort'], {
     cwd: new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1'),
     shell: true,
