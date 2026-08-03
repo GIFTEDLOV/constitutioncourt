@@ -1,170 +1,178 @@
 # ConstitutionCourt — demo script
 
-A walkthrough that shows the product doing the thing it claims, in about **six
-minutes**, without signing anything or spending GEN.
-
-**Live application:** https://constitutioncourt-10k54frri-kolofahkelvin16-6437s-projects.vercel.app
-
-> Everything below is read-only. No wallet is required — reading works without
-> one, and that is deliberate: a reviewer must be able to audit a case without
-> installing anything.
-
----
-
-## Before you start
+**Target duration: 2:45.** Read-only throughout — **no wallet interaction, no
+signature, no transaction.** Everything shown is live at
+https://constitutioncourt.vercel.app.
 
 | | |
 | --- | --- |
-| Browser | Any. A wallet is optional and never needed for this script. |
-| Case to open | `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` |
-| Expect | The case reads `RULED` · `NON_COMPLIANT` · `REJECTED` · `ART-4.3` |
-
-If the chain read is slow, the page says so rather than showing stale state.
-Bradbury settles a write in roughly 30 minutes; reads are immediate.
+| Recording resolution | 1600 × 1000 (desktop), scaled to 1080p |
+| Case to open | `https://constitutioncourt.vercel.app/case/0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` |
+| Explorer | `https://explorer-bradbury.genlayer.com` |
+| Prep | Load both tabs before recording so nothing shows a loading state. Scroll each page once to settle the reveal animations, then return to top. |
 
 ---
 
-## 0:00 — The problem (45s)
+### 0:00 – 0:20 · Homepage and the problem
 
-Open the **home page**.
+**Screen** — Home page at the top. Let the marquee run for two seconds, then
+scroll slowly to "A governance dispute has no neutral reader".
 
-> "A DAO votes. Someone says the vote broke the rules. What follows is a forum
-> thread, a screenshot, and eventually silence. The dispute doesn't resolve —
-> attention moves on."
+**Voice-over**
+> A DAO votes. Someone says the vote broke the DAO's own constitution. What
+> follows is a forum thread, a screenshot, and then silence. There's no neutral
+> reader — and the organisation being challenged is usually the one publishing
+> the vote record.
 
-Scroll to **"A governance dispute has no neutral reader"**.
-
-Land the point that matters:
-
-> "The organisation being challenged usually publishes the vote record itself,
-> including its own declaration that the proposal *passed*. That declaration is
-> the thing in dispute — it isn't evidence for it."
-
-## 0:45 — Why the obvious fixes fail (45s)
-
-Stay on the same section.
-
-> "A threshold function can't decide whether abstentions belong in the
-> denominator when the rule says 'votes cast'. Two defensible readings give
-> different answers. And a single human arbiter can decide all of it — but they're
-> one party's choice of reader."
-
-## 1:30 — What the protocol does (60s)
-
-Go to **How consensus works** (`/consensus`).
-
-Walk the five stages. Do not read them out; point at the **limits**:
-
-- 01 Submission — *"filing proves a claim was made, not that it's correct."*
-- 02 Pinned evidence — *"pinned to a 40-character commit, never a branch."*
-- 03 Independent fetch — *"no validator trusts another's copy, and none trusts
-  this interface."*
-- 04 Consensus — *"disagreement rotates the set and re-runs. A governance verdict
-  has no meaningful midpoint."*
-- 05 Immutable ruling — *"RULED is terminal."*
-
-> "Every stage says what it does *and* what it doesn't guarantee. That second
-> half is the product."
-
-## 2:30 — The live ruling (2 min) — **the centrepiece**
-
-Open **`/case/0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc`**.
-
-This is read live from Bradbury, not a fixture.
-
-Point out, in order:
-
-1. **The status, at display scale** — `RULED`, then `REJECTED`.
-2. **The violated rule** — `ART-4.3`, supermajority approval threshold, quoted
-   from the constitution the challenger pinned.
-3. **The reasoning**, and do the arithmetic out loud:
-
-   > "250,000 USDC is over the 100,000 tier, so two-thirds applies. 340,000 for,
-   > 180,000 against, 30,000 abstain. The rule says abstentions are excluded from
-   > this denominator — so it's 340 over 520, which is 65.4%. Two-thirds is 66.7%.
-   > It fails, narrowly."
-
-4. **The organisation had declared this vote PASSED.** Validators declined to
-   adopt that claim.
-5. **The citations** — each anchored to a commit-pinned URL you can fetch now.
-6. **The consensus scope callout** — *"consensus covered the outcome and the rule
-   ids. The prose is the leader validator's audit record, not a consensus-verified
-   artefact."*
-
-### Say this plainly
-
-> "The ruling executed with 4 of 5 validators agreeing. The contract state is
-> `RULED`. The ruling **transaction** hasn't finalized yet — a duplicate
-> submission is sitting ahead of it in the per-contract queue. So: ruled and
-> accepted, awaiting finalization. I'm not going to call it final until it is."
-
-That candour is the demo. Do not skip it.
-
-## 4:30 — Evidence is checkable (45s)
-
-Open one citation URL in a new tab — the raw pinned `proposal.json`.
-
-> "This is the exact byte-for-byte document the validators fetched. Pinned to a
-> commit, so it can't have changed underneath the case. You can verify the whole
-> ruling without trusting anything I've shown you."
-
-## 5:15 — Filing, briefly (30s)
-
-Go to **`/create`**. Step through the first two steps only. **Do not sign.**
-
-> "Six steps. Every URL is fetched and schema-checked before you can continue,
-> because a typo at step two must not become unfixable at step seven. Everything
-> pinned here is immutable once the case exists."
-
-Show the **review step**, which reads as a filing record rather than a form.
-
-## 5:45 — Limits (30s)
-
-Go to **Help** or the **About** page's "what this is not".
-
-> "No enforcement — a ruling moves no money and binds no one. Evidence is only as
-> good as its host. The contract stores URLs, not hashes. And `CERTIFIED` doesn't
-> mean a proposal is legal, safe or wise — only that validators found no
-> constitutional violation in the pinned evidence."
-
-Close on:
-
-> "A system that claimed more than it can do would have to be trusted. This one
-> is built not to require it."
+**Caption** — `Governance disputes aren't settled. They're outlasted.`
 
 ---
 
-## Questions you should expect
+### 0:20 – 0:40 · Why this can't be a function
 
-**"Why not just hash the evidence?"**
-Considered and deferred. The challenger would pick the hash too, so it attests to
-what the challenger pinned rather than what the organisation published. It adds
-ceremony without adding neutrality.
+**Screen** — Stay on "Why the obvious fixes do not work".
 
-**"What if validators disagree?"**
-The set rotates and the question re-runs. On this ruling, one of five returned
-`nondet_disagree` and was outvoted 4–1. Persistent disagreement escalates to a
-larger set rather than splitting the difference.
+**Voice-over**
+> You can't fix this with a threshold function. When the rule says "two-thirds of
+> votes cast", whether abstentions belong in the denominator is a reading, not a
+> calculation. And a single human arbiter is always one party's choice of reader.
+
+**Caption** — `A reading, not a calculation.`
+
+---
+
+### 0:40 – 1:05 · Filing a case, and the four evidence sources
+
+**Screen** — Navigate to `/create`. Show step 1, then step 2. **Do not sign
+anything.** Highlight the four URL fields.
+
+**Voice-over**
+> Filing pins four documents: the constitution, the proposal, the vote record and
+> the notice record. Each one is fetched and schema-checked before you can
+> continue — and each is pinned to a forty-character commit, never a branch. The
+> contract stores a URL; it can't store what that URL serves. Pinning is what
+> stops the evidence moving after the argument starts.
+
+**Caption** — `4 immutable evidence sources · commit-pinned`
+
+---
+
+### 1:05 – 1:20 · The respondent cannot block a ruling
+
+**Screen** — Scroll to the lifecycle on the case page or `/consensus` showing
+both paths: `OPEN → RESPONDED → RULED` and `OPEN → RULED`.
+
+**Voice-over**
+> The respondent may publish one permanent response. They may also say nothing —
+> and it doesn't matter. Ruling is permissionless: any account can trigger
+> adjudication from either state. Silence cannot stall a case.
+
+**Caption** — `OPEN → RULED · silence cannot block adjudication`
+
+---
+
+### 1:20 – 1:40 · Consensus
+
+**Screen** — `/consensus`. Scroll through stages 01 to 05 without stopping long.
+
+**Voice-over**
+> Five validators are drawn independently. Each fetches the evidence itself — no
+> validator trusts another's copy, and none trusts this interface. They must
+> agree before anything is recorded, and disagreement rotates the set and re-runs
+> the question rather than averaging opinions. A governance verdict has no
+> meaningful midpoint.
+
+**Caption** — `5 independent validators · consensus, not averaging`
+
+---
+
+### 1:40 – 2:15 · The live ruling — Case 002
+
+**Screen** — Open the live case URL. Hold on the giant `RULED` / `REJECTED`
+typography, then scroll to "Violated rules" and the citations.
+
+**Voice-over**
+> This is a real case, read live from Bradbury. Meridian Collective, proposal
+> MC-2026-021 — a 250,000 USDC disbursement. Three-forty thousand for, one-eighty
+> against, thirty thousand abstaining. The organisation declared it passed.
+>
+> Article 4.3 requires two-thirds above the hundred-thousand tier, with
+> abstentions excluded from that denominator. Three-forty over five-twenty is
+> sixty-five point four percent. Two-thirds is sixty-six point seven. It fails —
+> narrowly.
+>
+> `NON_COMPLIANT`, mapping to `REJECTED`, citing `ART-4.3`. Four of five
+> validators agreed. And every citation resolves to the exact commit-pinned
+> document they read.
+
+**Caption** — `NON_COMPLIANT → REJECTED · ART-4.3 · 4/5 majority_agree`
+
+---
+
+### 2:15 – 2:30 · The explorer, and an honest limitation
+
+**Screen** — Switch to the Bradbury explorer tab showing the ruling transaction.
+
+**Voice-over**
+> Here's that ruling transaction on the explorer. The deploy finalized in thirty
+> minutes. The ruling executed and the contract state reads `RULED` — but the
+> transaction has not finalized yet. A duplicate submission is stuck ahead of it
+> in the per-contract queue, and Bradbury's write side has been unavailable.
+>
+> That's a network condition, not a contract defect. So I'll call this what it
+> is: ruled on-chain, awaiting finalization.
+
+**Caption** — `Ruled on-chain · awaiting finalization · Bradbury write instability`
+
+---
+
+### 2:30 – 2:45 · Close
+
+**Screen** — Return to the home page, resting on the hero.
+
+**Voice-over**
+> ConstitutionCourt doesn't execute proposals and it isn't a legal court.
+> `CERTIFIED` is not legal approval. It gives a dispute one neutral reading
+> against a record that cannot move — and you can re-derive every verdict
+> yourself, without trusting this interface.
+>
+> Live at constitutioncourt.vercel.app. Source and every evidence fixture are
+> public. Case 002 is on Bradbury at `0x4C8BC901…`.
+
+**Caption**
+```
+constitutioncourt.vercel.app
+github.com/GIFTEDLOV/constitutioncourt
+0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc
+```
+
+---
+
+## Rules for the recording
+
+- **No wallet.** Do not connect one, do not open one, do not sign. The header
+  correctly reads "No wallet detected — reading works without one"; leave it.
+- **No transaction is submitted** at any point.
+- Do not present a **fixture** expectation as a ruling. Only Case 002 is live.
+- Do not say Case 002 is "final", "complete", or "finalized".
+- Do not claim the respondent-response path has been demonstrated live — it has
+  not; Case 003 is not deployed.
+- Keep the finalization limitation in. It is 15 seconds and it is the reason the
+  rest of the video is credible.
+
+## If asked afterwards
+
+**"Why hasn't it finalized?"**
+A duplicate ruling call was submitted 8 seconds before the effective one. It
+timed out at the consensus layer, applied no state, and has not reached a
+terminal state. Bradbury finalizes per contract in submission order, so it holds
+the slot ahead. Separately, Bradbury's write side has been unavailable.
+
+**"Has the response path been demonstrated?"**
+Not live. Case 002's respondent stayed silent, exercising `OPEN → RULED`. Case
+003 covers `OPEN → RESPONDED → RULED` and **is not deployed**; that path is
+covered by the offline suite only.
 
 **"Could the frontend fake a ruling?"**
-No — and more importantly, it doesn't compute one. Nothing the interface
-calculates is ever adopted by the contract. Read `get_state` on the explorer and
+It computes no outcome the contract adopts. Read `get_state` on the explorer and
 you get the same answer.
-
-**"Has the respondent-response path been demonstrated?"**
-Not live. Case 002's respondent stayed silent, which exercises `OPEN → RULED`.
-`OPEN → RESPONDED → RULED` needs Case 003, which **has not been run** — it is
-covered by the offline suite only. Say so; don't imply otherwise.
-
-**"Why is finalization taking so long?"**
-A duplicate ruling call was submitted 8 seconds before the effective one. It
-timed out and is still cycling through validator rounds. Bradbury finalizes per
-contract in order, so it holds the slot ahead.
-
----
-
-## Do not do during the demo
-
-- Do not sign a transaction or connect a wallet — nothing in this script needs one.
-- Do not present a **fixture** expectation as a ruling. Only Case 002 is live.
-- Do not describe Case 002 as "final". It is ruled and accepted, not finalized.

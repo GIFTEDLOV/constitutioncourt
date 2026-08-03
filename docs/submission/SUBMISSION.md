@@ -1,146 +1,326 @@
 # ConstitutionCourt — submission
 
-**Objective constitutional review through decentralized validator consensus.**
+![ConstitutionCourt — on-chain constitutional review through GenLayer validator consensus](../assets/submission/cover.png)
 
-| | |
+## Placeholders
+
+| Placeholder | Status |
 | --- | --- |
-| Live application | https://constitutioncourt-10k54frri-kolofahkelvin16-6437s-projects.vercel.app |
-| Repository | https://github.com/GIFTEDLOV/constitutioncourt |
-| Network | GenLayer Bradbury Testnet, chain `4221` |
-| Live contract | `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` |
-| Contract source SHA-256 | `bf845bc43768cb0829157ae9e7dad01a4d15b333c4139255d5018ac6ecf99341` |
-| Automated tests | 866 (392 contract + 474 frontend) |
+| `<VIDEO_URL>` | **Pending** — demo recording not yet published. Script: [DEMO-SCRIPT.md](DEMO-SCRIPT.md) |
+
+Everything else in this document is final. All URLs, addresses, transaction
+hashes, outcomes and test counts are real and verified.
 
 ---
 
-## One paragraph
+## One-line pitch
 
-Governance disputes are not settled today; they are outlasted. When someone
-claims a DAO's treasury vote broke the DAO's own constitution, there is no
-neutral reader — the parties who could adjudicate are the parties with an
-interest in the answer, and the evidence is a set of links that can be edited
-after the argument starts. ConstitutionCourt fixes both halves. Evidence is
-pinned to an immutable commit before adjudication, and the reading is performed
-by independently drawn GenLayer validators who each fetch the documents
-themselves and must agree before anything is recorded.
-
-## Why this needs GenLayer specifically
-
-Applying a constitution to a vote is a **reading**, not a calculation. It
-requires deciding whether abstentions belong in the denominator when the rule
-says "votes cast", whether a chat reminder is a public announcement "in full",
-and whether a missing tally settles nothing rather than implying guilt. The
-evidence schema deliberately forbids machine-readable threshold fields, so there
-is no number to compare — a threshold function cannot produce these answers.
-
-A single human arbiter can, and is one party's choice of reader. An off-chain
-model call can, and produces an answer nobody can reproduce.
-
-GenLayer executes non-deterministic reasoning **under consensus**: several
-validators independently reach a reading, and disagreement rotates the set and
-re-runs the question rather than averaging opinions. That is the whole product.
-There is no version of ConstitutionCourt that works without it.
-
-## What was built
-
-- **A GenLayer intelligent contract** (`contracts/constitution_court.py`, 32,043
-  bytes, LF-pinned, runner pinned to a version hash) — one instance per dispute,
-  three-state lifecycle, closed outcome vocabulary, permissionless ruling.
-- **A production frontend** — six reading routes plus a six-step filing wizard,
-  deploys the contract byte for byte, reads every case directly from the chain,
-  and works read-only with no wallet installed.
-- **Eighteen evidence fixtures** across four cases, each with a published
-  SHA-256, re-fetched and re-hashed in CI.
-- **A read-only pilot harness** with three independent opt-in gates before any
-  GEN can be spent.
-
-## Live result
-
-A real dispute was filed and ruled on Bradbury.
+**ConstitutionCourt asks GenLayer validators — not the party being challenged —
+whether a treasury proposal was carried according to the organisation's own
+constitution.**
 
 | | |
 | --- | --- |
+| Live application | **https://constitutioncourt.vercel.app** |
+| Repository | https://github.com/GIFTEDLOV/constitutioncourt |
+| Demo video | `<VIDEO_URL>` |
+| Network | GenLayer Bradbury Testnet, chain `4221` — **testnet only** |
+| Live contract | `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` |
+| Contract source SHA-256 | `bf845bc43768cb0829157ae9e7dad01a4d15b333c4139255d5018ac6ecf99341` |
+| Automated tests | **866** (392 contract + 474 frontend) |
+
+## Problem
+
+An organisation votes. Someone says the vote broke the organisation's own
+constitution. What follows is rarely a review — it is a forum thread, a
+screenshot, and eventually silence.
+
+The failure is structural. There is no neutral reader: the parties who could
+adjudicate are the parties with an interest in the answer. The evidence is a set
+of links that can be edited after the argument starts. And the organisation being
+challenged usually publishes the vote record itself — including its own
+declaration that the proposal *passed*, which is the thing in dispute rather than
+evidence for it.
+
+So disputes are settled by stamina and standing.
+
+## Target users
+
+| User | Need |
+| --- | --- |
+| **DAO members and token holders** challenging a treasury disbursement they believe broke the charter | A neutral reading they did not pay for and cannot be accused of buying |
+| **DAO stewards and multisig signers** who want cover before executing | A defensible, citable record that the vote met the constitution |
+| **Delegates and governance analysts** | A verdict they can re-derive from public evidence rather than take on trust |
+| **Auditors, journalists and grant committees** reviewing an organisation's governance history | A permanent, addressable record with citations |
+
+## Why centralized AI is insufficient
+
+Ask an API. You get an answer nobody can reproduce, from a model version nobody
+agreed on, with no record of what it actually read, chosen and paid for by one
+side of the dispute.
+
+That is not adjudication — it is one party's consultant. Every property a
+governance verdict needs is absent:
+
+- **Neutrality** — the caller picks the model, the prompt and the moment.
+- **Reproducibility** — re-running later gives a different answer, and nothing
+  records what the first run saw.
+- **Evidentiary fixity** — nothing stops the evidence changing between the
+  question and the answer.
+- **Independence** — one reader, however good, is still one reader.
+
+## Why GenLayer is essential
+
+Applying a constitution to a vote is a **reading**, not a calculation. The rule
+says "two-thirds of votes cast" — do abstentions belong in the denominator? It
+says "publicly announced, in full" — does a chat reminder count, and does it
+count if it landed after voting opened? The evidence schema **deliberately
+forbids machine-readable threshold fields**, so there is no number to compare.
+
+GenLayer executes non-deterministic reasoning **under consensus**. Validators are
+drawn independently, each fetches the evidence itself, each derives a complete
+ruling, and they must agree before anything is recorded. Disagreement rotates the
+set and re-runs the question rather than averaging opinions — a governance
+verdict has no meaningful midpoint.
+
+**The frontend never decides.** It computes no outcome the contract adopts. If it
+could, the contract would merely be recording an answer produced off-chain, and
+the application would not need GenLayer at all.
+
+There is no version of this product that works without GenLayer.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    UI["React frontend — reads without a wallet"]
+    W["Browser wallet — signs, never custodial"]
+    RPC["GenLayer RPC — gen_* plus proxied eth_*"]
+    C["ConstitutionCourt contract — one instance per case"]
+    V["Validator set — independent fetch and consensus"]
+    EV["Pinned evidence — commit-fixed HTTPS URLs"]
+
+    UI -->|read_contract| RPC
+    W -->|eth_sendRawTransaction| RPC
+    RPC --> C
+    C --> V
+    V -->|fetch at ruling time| EV
+    UI -.->|verify independently| EV
+```
+
+The frontend embeds and deploys `contracts/constitution_court.py` (791 lines,
+32,043 bytes) byte for byte — there is no compilation step. LF line endings are
+pinned because GenLayer derives a contract's address from its source bytes; a
+CRLF checkout deploys a different contract from the same commit. The GenVM runner
+is pinned to a version hash, never `:test` or `:latest`.
+
+## Workflow
+
+```
+  1. File       challenger deploys one contract, pins 4 evidence URLs at a commit
+  2. Respond    respondent may publish one permanent response      (optional)
+  3. Rule       any account triggers adjudication                  (permissionless)
+  4. Consensus  validators independently fetch, read, and must agree
+  5. Record     outcome + violated rule ids written immutably, with citations
+```
+
+```mermaid
+stateDiagram-v2
+    [*] --> OPEN: deploy
+    OPEN --> RESPONDED: submit_response()
+    OPEN --> RULED: rule()
+    RESPONDED --> RULED: rule()
+    RULED --> [*]
+```
+
+**A silent respondent cannot block adjudication.** Ruling is permissionless, so
+neither party can leave a case unruled forever.
+
+## Contract methods
+
+| Method | Kind | Notes |
+| --- | --- | --- |
+| constructor | deploy | `(respondent: Address, case_title, constitution_url, proposal_url, vote_record_url, notice_record_url)` — order is locked; the address argument must reach GenVM as a calldata `Address`, not a string |
+| `submit_response(response_url)` | `@gl.public.write` | Respondent only, once, while `OPEN` |
+| `rule()` | `@gl.public.write` | Permissionless, from `OPEN` or `RESPONDED`. Terminal |
+| `get_state()` | `@gl.public.view` | Full case record including outcome, rule ids, citations, reasoning |
+| `get_evidence_sources()` | `@gl.public.view` | The pinned URLs and schema version |
+
+## Consensus fields
+
+Consensus covers **two fields and only two**:
+
+| Field | Comparison |
+| --- | --- |
+| `outcome` | Exact string |
+| `violated_rule_ids` | **Set** — ordering and duplicates cannot fail consensus over formatting |
+
+Citations and written reasoning are recorded from the **leader** validator as an
+audit record so a reader can check a finding against its basis. They are
+explanatory, not consensus-verified: two validators reaching the same verdict for
+the same reason will word it differently, so requiring agreement on prose would
+fail consensus for no gain in correctness.
+
+## Evidence model
+
+| Role | Required | Schema |
+| --- | --- | --- |
+| Constitution | yes | `constitutioncourt/constitution@1` |
+| Proposal | yes | `constitutioncourt/proposal@1` |
+| Vote record | yes | `constitutioncourt/vote-record@1` |
+| Notice record | yes | `constitutioncourt/notice-record@1` |
+| Respondent response | no | `constitutioncourt/response@1` |
+
+URLs are pinned to a **40-character commit, never a branch**. The contract stores
+the URL; it cannot store what that URL serves. Validators fetch at ruling time,
+which may be far later than filing — a branch reference would let them adjudicate
+whatever it says then, and if it moves *while* they fetch, two validators
+legitimately read different bytes and disagree about the evidence rather than the
+question.
+
+## Security properties
+
+| Boundary | Property |
+| --- | --- |
+| Custody | None. No balance, no payable method, no asset movement. |
+| Keys | Never held by the application. Browser wallet signs; the pilot harness never logs, persists or defaults a credential. |
+| Frontend authority | Zero. Reads work with no wallet installed. |
+| Evidence integrity | Commit-pinned URLs; branch URLs are refused and mutable sources warned. |
+| Rule ids | The contract rejects a ruling citing an id the constitution does not contain. |
+| Supply chain | 21 exact dependency pins, lockfile agreement, contract byte-identity — all enforced in CI. |
+| Transport | Strict CSP (`default-src 'self'`, no CDN scripts or fonts), HSTS preload, `X-Frame-Options: DENY`, nosniff. |
+| Write gating | Live runs opt-in twice; spending GEN requires a third, separate opt-in. |
+
+## Test evidence
+
+| Suite | Result |
+| --- | --- |
+| Contract / direct-mode (pytest) | **392 passed** (49 live-only deselected) |
+| Frontend unit (vitest) | **474 passed**, 21 files |
+| **Total** | **866** |
+| Accessibility (axe-core) | 9 routes × 2 viewports, **0 serious/critical** |
+| Overflow sweep | 4 viewports + tap targets, pass |
+| Reproducibility | contract byte-identity, exact pins, lockfile — pass |
+| Encoding | calldata `Address` round-trip — pass |
+| Evidence fixtures | schema v1, re-fetched and re-hashed — pass |
+| GenVM lint · line endings · secret scan | pass |
+
+All ten CI jobs run on every push to `main`.
+
+## Case 002 — live evidence
+
+**Status: RULED ON-CHAIN, AWAITING FINALIZATION.**
+
+| | |
+| --- | --- |
+| Contract | `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` |
+| Deploy tx | `0x59d661867b1f4ffb93d8673523ccc36496ea7997727585c0f3d3e7570d7c9400` — **finalized**, 30m 22s |
+| Ruling tx (effective) | `0xe22b0ff6743c3b29082f463365f2999a4f90da4eea462a434ef1983eec3bc406` — executed `FINISHED_WITH_RETURN`, **accepted, not finalized** |
+| Duplicate ruling tx | `0x42b6a679116050aee83fb4e96bf4ae0b4f683809bdf128c0be2a906e68ae6e9d` — `TIMEOUT`, **not terminal** |
 | Outcome | `NON_COMPLIANT` |
 | Final status | `REJECTED` |
-| Violated rule | `ART-4.3` (supermajority approval threshold) |
-| Validator vote | 4 of 5 `finished_with_return`, 1 `nondet_disagree` |
-| Deploy tx | **finalized** in 30m 22s |
-| Ruling tx | executed and accepted, **awaiting finalization** |
+| Violated rules | `ART-4.3` |
+| `ruled_at` | `2026-08-02T10:13:02Z` |
+| Validator vote | 4 of 5 `finished_with_return`, 1 `nondet_disagree` → `majority_agree` |
+
+The dispute: Meridian Collective proposal MC-2026-021, a 250,000 USDC treasury
+disbursement. The tally was 340,000 for, 180,000 against, 30,000 abstaining — and
+the organisation **declared it PASSED**.
+
+Article 4.3 requires two-thirds of votes cast above a 100,000 USDC tier, with
+abstentions excluded from *that* denominator. Validators did the arithmetic:
+340,000 / 520,000 ≈ **65.4%**, short of 66.7%. They declined to adopt the
+organisation's own declaration about its own vote.
 
 The verdict matched the expectation recorded **before** the case was filed.
-Validators declined to adopt the organisation's own declaration that its
-proposal had passed, and did the abstention arithmetic the rule's own words
-require: 340,000 / 520,000 ≈ 65.4%, short of two-thirds.
 
-Full record, including validator votes and the finalization state: **[../pilot/PILOT-RUN.md](../pilot/PILOT-RUN.md)**.
+## Honest live-pilot status
 
-## Status — stated precisely
+This is not a completed pilot. Stated precisely:
 
 | Claim | Status |
 | --- | --- |
-| Contract deployed live on Bradbury | **Yes**, finalized |
+| Contract deployed live on Bradbury | **Yes** — deploy finalized |
 | Case 002 ruled on-chain | **Yes** — contract state reads `RULED` |
-| Case 002 ruling transaction finalized | **No** — `ReadyToFinalize`, queued behind a duplicate submission |
-| Case 003 respondent-response flow run live | **No** — fixture only, not deployed |
+| Case 002 ruling transaction **finalized** | **No** — `ReadyToFinalize` |
+| Duplicate ruling reached a terminal state | **No** — `AppealRevealing` |
+| Case 003 deployed | **No — not deployed** |
+| Respondent-response path live-proven | **No — tested, not live-proven** |
 | `CERTIFIED` / `UNRESOLVED` produced on-chain | **No** — fixture expectations only |
-| Frontend deployed to production | **Yes**, byte-verified against the gated build |
+| Live pilot complete | **No** |
 
-An **expected fixture outcome is not a ruling.** Three of the four fixtures have
-never been deployed; the application labels them as expectations and never
-presents one as a live verdict.
+### Why
 
-## What it deliberately is not
+**Bradbury write-side instability prevented completion of the remaining live
+workflow.** Transaction acceptance on the network has been unavailable, and the
+per-contract finalization queue for Case 002 is held by a duplicate ruling
+submission that has not reached a terminal state.
 
-Not a legal court. Not a treasury executor. Not a voting platform. Not escrow.
-Not a chatbot. Not a replacement for GenLayer's native transaction appeal.
+**This is a network condition, not an application or contract defect.** The
+contract executed correctly and returned `FINISHED_WITH_RETURN` with a 4/5
+majority. The deploy finalized normally. Every offline gate passes. Nothing in
+this repository needs to change for the remaining workflow to complete — it needs
+Bradbury writes to be available again.
 
-A ruling moves no money, reverses no transfer and binds no one. `CERTIFIED`
-means validators found no constitutional violation in the pinned evidence — not
-that the proposal is legal, safe, wise or authorised.
+No further transaction was submitted, no signature requested, and no GEN spent.
 
-These limits are not disclaimers bolted on at the end. They are why the rulings
-are worth reading: a system that claimed more than it can do would have to be
-trusted, and this one is designed not to require trust.
+### Fixture expectations are not live rulings
 
-## Engineering gates
+| Fixture | Expected outcome | On-chain status |
+| --- | --- | --- |
+| `case-001-compliant-simple-majority` | `COMPLIANT` → `CERTIFIED` | not deployed |
+| `case-002-non-compliant-two-thirds` | `NON_COMPLIANT` → `REJECTED` | **ruled live — matches expectation** |
+| `case-003-non-compliant-notice-period` | `NON_COMPLIANT` → `REJECTED` | **not deployed** |
+| `case-004-insufficient-evidence` | `INSUFFICIENT_EVIDENCE` → `UNRESOLVED` | not deployed |
 
-Every one of these runs in CI on every push:
+## Limitations
 
-| Gate | Result |
+- **No enforcement, no execution.** A ruling moves no money and binds no one.
+  **ConstitutionCourt does not execute proposals.**
+- **`CERTIFIED` is not legal approval.** It means validators found no
+  constitutional violation in the pinned evidence — nothing about legality,
+  safety, wisdom or authorisation. **`REJECTED` is a constitutional-compliance
+  result over the pinned evidence**, not a legal finding.
+- **Evidence is only as good as its host.** Neither party is neutral; a
+  consistently false document yields a faithful ruling about a false record.
+- **No content pinning.** URLs, not hashes — the challenger would pick the hash
+  too, so it would attest to what the challenger pinned.
+- **One case per contract.** No registry, no cross-case search.
+- **Scope is treasury proposals** only.
+- **Settlement is slow and currently unreliable** — a network property outside
+  this application's control.
+- **Bradbury Testnet only.** No mainnet deployment exists.
+
+## Roadmap
+
+| Next | Why |
 | --- | --- |
-| Contract direct-mode tests | 392 passed |
-| Frontend unit tests | 474 passed |
-| Lint, typecheck, build | pass |
-| Reproducibility — contract byte-identity, exact pins, lockfile | pass |
-| Encoding — calldata `Address` round-trip | pass |
-| Browser smoke | pass |
-| Accessibility (axe-core), 9 routes × 2 viewports | 0 serious/critical |
-| Overflow sweep, 4 viewports + tap targets | pass |
-| Evidence fixtures re-fetched and re-hashed | pass |
-| GenVM lint · line endings · secret scan | pass |
+| Complete Case 003 live once Bradbury writes recover | Proves `OPEN → RESPONDED → RULED` on-chain rather than only in tests |
+| Produce `CERTIFIED` and `UNRESOLVED` on-chain | All three outcomes demonstrated live, not just `REJECTED` |
+| Idempotent submission guard in the filing UI | The duplicate ruling came from a double submission; the client should make that impossible |
+| Optional content hashing as a challenger-declared extra | Does not fix neutrality, but detects post-hoc edits by a cooperating host |
+| Widen scope beyond treasury proposals | Membership, elections and amendments need their own evidence types |
 
-## Verify it yourself
+## Why this project should be highlighted
 
-You do not have to trust the interface.
+**It answers a question that could not be answered on-chain before.** Governance
+tooling stops at counting because counting is all a deterministic contract can
+do. ConstitutionCourt does the part that was previously impossible: reading a
+natural-language rule and deciding whether a real vote met it — under consensus,
+against evidence that cannot move, with citations anyone can check.
 
-```bash
-# Read the live case straight from the chain
-python -m pilot preflight          # read-only, signs nothing
+**It has a real ruling, not a demo.** Five independent validators read a real
+dispute and produced a verdict that contradicted the organisation's own public
+claim about its own vote. The arithmetic is checkable, the citations resolve, and
+the expectation was written down before the filing.
 
-# Confirm the deployed bytes are the audited source
-cd frontend && npm run repro
-```
+**It is honest about its limits, in the product itself.** Every consensus display
+states what consensus did *not* cover. Every stage of the consensus page states
+what it does not guarantee. This submission does not call the pilot complete,
+because it is not — and the network condition that blocked it is documented
+rather than hidden.
 
-Or open the contract in the [Bradbury
-explorer](https://explorer-bradbury.genlayer.com/contract/0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc),
-fetch the four pinned evidence URLs yourself, and check each cited rule id
-against the constitution document.
-
-## Placeholders remaining
-
-- **Production URL** is the current Vercel deployment URL; a custom domain has
-  not been assigned.
-- **Case 003 live run** is outstanding — the respondent-response path is proven
-  by tests, not by chain.
-- **Case 002 finalization** is outstanding and outside our control; it resolves
-  when the duplicate ahead of it in the per-contract queue terminates.
+**It is engineered to be checked.** 866 automated tests, contract byte-identity
+enforced in CI, every evidence fixture published with its SHA-256, zero
+serious/critical accessibility violations, and a frontend with no authority over
+any outcome. You do not have to trust the interface — which was the requirement.
