@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-labelledby="cc-title">
+  <title id="cc-title">ConstitutionCourt</title>
+  <!--
+    A "CC" monogram drawn as two geometric arcs rather than <text>.
+
+    An SVG favicon that relies on a font renders differently, or not at all,
+    depending on what the viewer's system has installed — the tab icon is the
+    one asset that cannot afford that. Circular arcs with flat terminals give
+    the geometric-sans character the brief asks for and render identically
+    everywhere.
+
+    Sizing is tuned for 16x16: a 6/64 stroke is ~1.5px at tab size, and the
+    counters stay open at ~3.7px. Full-bleed square, no radius, no gradient,
+    no shadow.
+  -->
+  <rect width="64" height="64" fill="#04211d"/>
+  <g fill="none" stroke="#f2f0e8" stroke-width="6" stroke-linecap="butt">
+    <path d="M24.02 23.40 A10.5 10.5 0 1 0 24.02 40.60"/>
+    <path d="M52.02 23.40 A10.5 10.5 0 1 0 52.02 40.60"/>
+  </g>
+</svg>
