@@ -19,7 +19,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional
 
-from .classify import classify, consensus_votes
+from .classify import chain_timestamps, classify, consensus_votes, vote_tally
 from .fixtures import PilotCase, canonical_contract_source, sha256_bytes
 from .receipt import (
     AddressRecoveryError, parse_deploy_receipt, recover_contract_address,
@@ -91,10 +91,17 @@ def reconstruct(
     ):
         if not tx_hash:
             continue
-        record.record_submission(step, tx_hash, method)
+        # Fetch first, so the hash and its timestamps are persisted together and
+        # the record carries the chain's account of when this happened rather
+        # than the moment reconstruction ran.
         receipt = adapter.transaction(tx_hash)
+        times = chain_timestamps(receipt)
+        record.record_submission(step, tx_hash, method,
+                                 submitted_at=times.get("submitted_at"))
         c = classify(receipt)
-        record.record_receipt(step, c, consensus_votes(receipt))
+        record.record_receipt(step, c, consensus_votes(receipt),
+                              last_vote_at=times.get("last_vote_at"),
+                              tally=vote_tally(receipt))
         log(f"  {step}: {c.phase} — {c.detail}")
 
     # --- live state --------------------------------------------------------

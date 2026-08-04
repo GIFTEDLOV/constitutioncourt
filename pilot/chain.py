@@ -35,13 +35,31 @@ class ChainAdapter(Protocol):
     def contract_code(self, address: str) -> Optional[str]: ...
 
 
+#: The `from` address used for reads.
+#
+# `gen_call` requires a caller even for a view, and genlayer-py's
+# `read_contract` refuses outright without one ("No account provided and no
+# account is connected") — which is why every read through this adapter used to
+# fail. The zero address satisfies the node, was verified to work against
+# Bradbury for both `get_state` and `get_evidence_sources`, and keeps the
+# promise this harness makes everywhere else: **a read never involves a key.**
+#
+# Minting a throwaway account would also work and is what an operator reaching
+# for the SDK would do, but it creates key material to answer a question that
+# needs none. The contract's views do not inspect their caller; if one ever
+# did, the zero address fails closed rather than open.
+READ_ONLY_CALLER = "0x" + "0" * 40
+
+
 class GenLayerAdapter:
     """The live adapter. Constructed only when a live run is requested."""
 
-    def __init__(self, rpc_url: Optional[str] = None):
+    def __init__(self, rpc_url: Optional[str] = None,
+                 caller: str = READ_ONLY_CALLER):
         import genlayer_py as gl
 
         self._gl = gl
+        self._caller = caller
         self._chain = gl.testnet_bradbury
         if rpc_url and rpc_url != config.RPC_URL:
             # Honour an override without mutating the shared chain object.
@@ -65,10 +83,66 @@ class GenLayerAdapter:
     def balance_wei(self, address: str) -> int:
         return int(self._client.w3.eth.get_balance(address))
 
-    def read(self, address: str, method: str) -> Any:
-        return self._client.read_contract(
-            address=address, function_name=method, args=[]
+    def read(self, address: str, method: str,
+             variant: str = "latest-nonfinal") -> Any:
+        """Call a view, read-only, with an explicit caller address.
+
+        Issues `gen_call` directly rather than going through
+        `client.read_contract`, for two reasons found against Bradbury and
+        genlayer-py 0.16.3:
+
+        * `read_contract` requires a connected account and raises without one,
+          even though a view needs no signer. This adapter is used by the
+          browser-pilot path, which by design never holds an account.
+        * `read_contract` then does ``"0x" + result`` on the response. Bradbury
+          answers `gen_call` with an object (``{"data": …, "status": …, …}``),
+          not a bare hex string, so that concatenation raises ``TypeError: can
+          only concatenate str (not "dict") to str`` before the caller sees
+          anything. Both response shapes are handled below.
+
+        Nothing here signs, spends, or mutates.
+        """
+        from genlayer_py.abi import calldata
+        from genlayer_py.abi.transactions import serialize
+        from genlayer_py.contracts.utils import make_calldata_object
+        import eth_utils
+
+        payload = [
+            calldata.encode(make_calldata_object(method=method, args=[], kwargs=None)),
+            b"\x00",
+        ]
+        raw = self._client.provider.make_request("gen_call", [{
+            "type": "read",
+            "to": address,
+            "from": self._caller,
+            "data": serialize(payload),
+            "transaction_hash_variant": variant,
+        }])["result"]
+
+        encoded = self._decode_envelope(raw)
+        if encoded is None:
+            return None
+        return calldata.decode(
+            eth_utils.hexadecimal.decode_hex("0x" + encoded.removeprefix("0x"))
         )
+
+    @staticmethod
+    def _decode_envelope(raw: Any) -> Optional[str]:
+        """The hex payload out of a `gen_call` result, or None if there isn't one.
+
+        Bradbury returns an object carrying `data`; older/other nodes return the
+        hex directly. A malformed or empty response yields None rather than an
+        exception, so a caller records "the node did not answer" instead of
+        crashing a read-only reconstruction.
+        """
+        if isinstance(raw, str):
+            return raw or None
+        if isinstance(raw, Mapping):
+            for key in ("data", "result", "payload", "return"):
+                value = raw.get(key)
+                if isinstance(value, str) and value:
+                    return value
+        return None
 
     def transaction(self, tx_hash: str) -> Optional[Mapping[str, Any]]:
         try:

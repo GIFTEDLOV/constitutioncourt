@@ -158,23 +158,45 @@ class PilotRecord:
         self.data["evidence"] = documents
         self.save()
 
-    def record_submission(self, step: str, tx_hash: str, method: str) -> None:
+    def record_submission(self, step: str, tx_hash: str, method: str,
+                          submitted_at: Optional[str] = None) -> None:
         """Persist a hash the instant it exists, before anything is awaited.
 
         Called between `write_contract` returning and the first poll. If the
         process dies immediately after, the hash is on disk and the run is
         resumable rather than orphaned.
+
+        `submitted_at` defaults to now, which is correct for a live run because
+        now *is* the moment of submission. A reconstruction of an earlier run
+        passes the chain's own timestamp instead — the wall clock at
+        reconstruction time is not evidence of when anything was submitted.
         """
         s = self.step(step)
         s["method"] = method
         s["tx_hash"] = tx_hash
-        s["submitted_at"] = utc_now()
+        s["submitted_at"] = submitted_at or utc_now()
         s.setdefault("status", "submitted")
         self.event("submitted", f"{method}() submitted", step=step, tx_hash=tx_hash)
         self.save()
 
-    def record_receipt(self, step: str, classification, votes: Mapping[str, Any]) -> None:
+    def record_receipt(self, step: str, classification, votes: Mapping[str, Any],
+                       settled_at: Optional[str] = None,
+                       last_vote_at: Optional[str] = None,
+                       tally: Optional[Mapping[str, Any]] = None) -> None:
+        """Record a settled outcome.
+
+        Two different clocks, kept apart on purpose:
+
+        * `settled_at` — when *this harness* saw the outcome settle. Meaningful
+          for a live run, which is watching in real time.
+        * `last_vote_at` — when the *chain* recorded the last validator vote.
+          Written by a reconstruction, which is reading history and has no
+          business stamping it with the current time. It is not the
+          finalization time; the node does not report one.
+        """
         s = self.step(step)
+        if last_vote_at:
+            s["last_vote_at"] = last_vote_at
         s["consensus_status"] = classification.status
         s["execution_result"] = classification.execution
         s["consensus_result"] = classification.consensus
@@ -182,10 +204,16 @@ class PilotRecord:
         s["retry_classification"] = classification.retry
         s["succeeded"] = classification.succeeded
         s["detail"] = classification.detail
-        s["settled_at"] = utc_now()
+        # Only stamp an observation time when there is an observation to stamp.
+        # A reconstruction supplies `last_vote_at` instead and must not invent a
+        # settlement moment out of the current clock.
+        if settled_at or not last_vote_at:
+            s["settled_at"] = settled_at or utc_now()
         s["status"] = "settled" if classification.terminal else "in-flight"
         if votes:
             s["validator_votes"] = dict(votes)
+        if tally:
+            s["validator_vote_tally"] = dict(tally)
         self.event("settled", classification.detail, step=step, phase=classification.phase)
         self.save()
 

@@ -21,6 +21,8 @@ import re
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional
 
+from .classify import _field, consensus_of, execution_of, status_of
+
 ZERO_ADDRESS = "0x" + "0" * 40
 ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
 
@@ -50,16 +52,27 @@ def _s(value: Any) -> str:
 
 
 def parse_deploy_receipt(receipt: Optional[Mapping[str, Any]]) -> Optional[DeployReceipt]:
+    """Extract the deploy-relevant fields, under either field-naming convention.
+
+    genlayer-py's types are camelCase; the Bradbury RPC answers in snake_case.
+    Status, execution and consensus are resolved by `pilot.classify`, which owns
+    that translation and the numeric-code fallback.
+
+    The address rule in this module's docstring is unchanged: the address comes
+    from the decoded transaction data and never from `recipient`.
+    """
     if receipt is None:
         return None
-    decoded = receipt.get("txDataDecoded") or {}
+    decoded = _field(receipt, "tx_data_decoded", "txDataDecoded") or {}
     if not isinstance(decoded, Mapping):
         decoded = {}
     return DeployReceipt(
-        status=_s(receipt.get("statusName") or receipt.get("status")).upper(),
-        execution=_s(receipt.get("txExecutionResultName")).upper(),
-        consensus=_s(receipt.get("resultName")).upper(),
-        contract_address=(_s(decoded.get("contractAddress")) or None),
+        status=status_of(receipt),
+        execution=execution_of(receipt),
+        consensus=consensus_of(receipt),
+        contract_address=(
+            _s(_field(decoded, "contract_address", "contractAddress")) or None
+        ),
         recipient=(_s(receipt.get("recipient")) or None),
         raw=receipt,
     )
@@ -79,10 +92,19 @@ def recover_contract_address(parsed: Optional[DeployReceipt]) -> str:
     if not address:
         extra = ""
         if parsed.recipient:
-            extra = (f" Its recipient is {parsed.recipient}, which for a deploy is the zero "
-                     "address and never the deployed contract.")
+            # Deliberately not a fallback, and the reason is worth stating
+            # exactly rather than asserting what `recipient` contains. Bradbury
+            # returns the contract address here for a deploy while the reference
+            # SDKs return the zero address, so its value is node-dependent and
+            # cannot be trusted to identify anything. A field that means
+            # different things on different nodes is not an address source.
+            extra = (f" Its recipient is {parsed.recipient}, which is not used: for a deploy "
+                     "`recipient` is node-dependent — the zero address on some nodes, the "
+                     "contract on others — so it can never establish which contract was "
+                     "deployed.")
         raise AddressRecoveryError(
-            "The finalized receipt names no contract address in txDataDecoded." + extra
+            "The finalized receipt names no contract address in its decoded "
+            "transaction data." + extra
         )
 
     if not ADDRESS_RE.match(address):
