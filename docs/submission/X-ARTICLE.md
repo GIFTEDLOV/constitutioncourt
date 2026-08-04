@@ -142,6 +142,10 @@ turn a blip into a permanent judgement about a case that has a real answer.
 
 ## What happened when we filed a real one
 
+*This is what the run produced on 2026-08-02. Bradbury has since canceled the
+ruling transaction and the case has reverted to `OPEN` — see "The part I am not
+going to dress up" below. Read this section as history.*
+
 **Meridian Collective, proposal MC-2026-021.** A treasury disbursement of 250,000
 USDC. The tally: 340,000 for, 180,000 against, 30,000 abstaining. The
 organisation published the vote record itself and **declared the proposal
@@ -154,7 +158,7 @@ disbursement above 100,000 USDC — and specifies that abstentions, which count
 toward quorum under Article 3.1, are **excluded from this denominator**.
 
 Five validators fetched the pinned documents independently. Here is what the
-leader recorded on-chain:
+leader recorded at the time:
 
 > The proposal requested 250,000 USDC, which exceeds the 100,000 USDC threshold
 > specified in ART-4.3... Excluding abstentions, the denominator is 520,000
@@ -178,61 +182,85 @@ was a prediction, not a description.
 
 ## The part I am not going to dress up
 
-The ruling executed. The contract state reads `RULED`. You can read the verdict
-right now at `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc`.
-
-**The ruling transaction has not finalized.**
+The ruling executed on 2026-08-02, and for about a day the contract state read
+`RULED`. **It doesn't any more.**
 
 A duplicate ruling call went in **8 seconds before** the effective one — a double
 submission from the client. It timed out at the consensus layer, applied no
-state, and has been cycling through validator rounds ever since, expanding to
-thirteen validators without converging. Bradbury finalizes transactions per
-contract in submission order, so that stuck duplicate holds the queue slot ahead
-of the real ruling.
+state, and cycled through validator rounds without converging. Bradbury finalizes
+transactions per contract in submission order, so that stuck duplicate held the
+queue slot ahead of the real ruling. On top of that, Bradbury's **write side has
+been unavailable** — a confirmed general network condition, not something
+specific to this contract.
 
-On top of that, Bradbury's **write side has been unavailable** — a confirmed
-general network condition, not something specific to this contract.
+Neither ruling transaction ever finalized. On 2026-08-04 I re-checked, read-only,
+and found the network had **canceled both of them**. The effective ruling now
+reports status `CANCELED`, zero rounds, no leader receipt and `NOT_VOTED` from
+all five validators — the chain no longer attests to the 4/5 majority it
+reported two days earlier. The contract state has reverted to **`OPEN`**.
 
-So the honest status is: **ruled on-chain, awaiting finalization.** Not final.
-Until it finalizes it remains theoretically reversible by appeal.
+So the honest status is: **deployed and finalized, currently `OPEN`, no live
+ruling.** The run happened. The record of it did not survive the network.
 
 I want to be exact about where the fault lies. The contract executed correctly
-and returned `FINISHED_WITH_RETURN` with a 4/5 majority. The deploy finalized
-normally in thirty minutes. All 866 automated tests pass. **Nothing in the
-repository needs to change** for the remaining workflow to complete — it needs
-the network's write path to come back. This is a network condition, not an
-application or contract defect.
+when it ran and returned `FINISHED_WITH_RETURN` with a 4/5 majority. The deploy
+finalized normally in thirty minutes and its bytes still hash to the audited
+source today. All 866 automated tests pass. Cancellation hit both ruling
+transactions at the consensus layer, including one that had already executed.
+**Nothing in the repository needs to change** for the case to be ruled again —
+ruling is permissionless and the case is `OPEN`, so it needs no redeploy, only a
+working network.
 
-I could have written "successfully ruled on-chain" and stopped there. Nobody
-would have checked. But the entire claim of the product is that you should not
-have to trust the interface — and that claim is worth nothing if the people
-building it round the corners when the result is inconvenient.
+I could have left "successfully ruled on-chain" standing. Nobody would have
+checked; the screenshots were already taken. But the entire claim of the product
+is that you should not have to trust the interface — and that claim is worth
+nothing if the people building it round the corners when the result is
+inconvenient. So the claim is withdrawn, and this is what replaced it.
+
+There is a smaller lesson underneath the embarrassing one. This project insisted
+everywhere on the difference between `accepted` and `finalized`, and wrote every
+status as "ruled, awaiting finalization" rather than "ruled". That discipline is
+the only reason nothing published was untrue at the time it was written. Read
+state derived from an unfinalized transaction is provisional. Treating it as
+settled is the mistake, and it is an easy one to make when the result is the one
+you wanted.
 
 ## What is proven, and what is not
 
-**Proven on-chain:**
+**Standing on-chain right now:**
+
+- The contract, deployed and `FINALIZED`, with its bytes verifiably identical to
+  the audited source — re-read on 2026-08-04 and still matching.
+- Four commit-pinned evidence URLs, intact and reachable.
+- Deploy finalization end to end.
+
+**It happened, but the chain no longer attests to it:**
 
 - A real dispute adjudicated by independently drawn validators reading
   commit-pinned evidence, with no privileged reader.
 - A verdict that matched an expectation recorded before the filing.
 - Silence not blocking adjudication — the respondent never answered and the case
   ruled from `OPEN` anyway.
-- The deployed bytes verifiably identical to the audited source.
-- Deploy finalization end to end.
+
+Those three are recorded in the pilot log with the transaction hashes, and both
+of those transactions now read `CANCELED`. I am listing them separately from the
+first group on purpose: you can verify the first group yourself today, and you
+cannot verify the second.
 
 **Not proven, and I am not claiming it:**
 
-- **Ruling finalization.** Pending, for the reasons above.
+- **A live ruling.** The case reads `OPEN`. There is no verdict on-chain.
+- **Ruling finalization.** Never reached; both attempts were canceled.
 - **The respondent-response path.** `OPEN → RESPONDED → RULED` needs Case 003,
   which **is not deployed**. That path is covered by the offline suite only —
   tested, not live-proven.
-- **`CERTIFIED` and `UNRESOLVED` on-chain.** Only `REJECTED` has been produced
-  live. The other two exist as fixture expectations, and an expected fixture
-  outcome is not a ruling.
+- **`CERTIFIED` and `UNRESOLVED` on-chain.** Neither has been produced live, and
+  `REJECTED` no longer stands either. All three exist as fixture expectations,
+  and an expected fixture outcome is not a ruling.
 
-Once Bradbury writes recover, the remaining workflow is: finalize Case 002, run
-Case 003 end to end to demonstrate the response path, and produce the other two
-outcomes live.
+Once Bradbury writes recover, the remaining workflow is: re-rule Case 002 on the
+existing `OPEN` contract, run Case 003 end to end to demonstrate the response
+path, and produce the other two outcomes live.
 
 ## What it deliberately cannot do
 
@@ -259,12 +287,15 @@ trusted, and this one is built specifically not to require that.
 
 Contract `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` on GenLayer Bradbury.
 
-Read `get_state` on the explorer. Fetch the four pinned evidence URLs. Check each
-cited rule id against the constitution document. Compare the deployed source
-against the repository — the frontend deploys that file byte for byte, and its
-SHA-256 is `bf845bc4…`.
+Read `get_state` on the explorer — it will say `OPEN`, and that is the point of
+telling you to read it rather than asking you to take my word for the verdict I
+wrote about above. Fetch the four pinned evidence URLs; they still resolve.
+Compare the deployed source against the repository — the frontend deploys that
+file byte for byte, and its SHA-256 is `bf845bc4…`. Look up both ruling
+transaction hashes in the pilot log and see `CANCELED` for yourself.
 
-You do not have to trust the interface. That was the requirement.
+You do not have to trust the interface. That was the requirement, and it is the
+reason you can catch this article being out of date rather than having to wonder.
 
 ---
 

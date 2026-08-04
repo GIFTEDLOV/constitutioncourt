@@ -2,14 +2,8 @@
 
 ![ConstitutionCourt — on-chain constitutional review through GenLayer validator consensus](../assets/submission/cover.png)
 
-## Placeholders
-
-| Placeholder | Status |
-| --- | --- |
-| `<VIDEO_URL>` | **Pending** — demo recording not yet published. Script: [DEMO-SCRIPT.md](DEMO-SCRIPT.md) |
-
-Everything else in this document is final. All URLs, addresses, transaction
-hashes, outcomes and test counts are real and verified.
+Every URL, address, transaction hash, outcome and test count in this document is
+real and verified. Nothing here is a placeholder.
 
 ---
 
@@ -23,7 +17,6 @@ constitution.**
 | --- | --- |
 | Live application | **https://constitutioncourt.vercel.app** |
 | Repository | https://github.com/GIFTEDLOV/constitutioncourt |
-| Demo video | `<VIDEO_URL>` |
 | Network | GenLayer Bradbury Testnet, chain `4221` — **testnet only** |
 | Live contract | `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` |
 | Contract source SHA-256 | `bf845bc43768cb0829157ae9e7dad01a4d15b333c4139255d5018ac6ecf99341` |
@@ -209,19 +202,29 @@ All ten CI jobs run on every push to `main`.
 
 ## Case 002 — live evidence
 
-**Status: RULED ON-CHAIN, AWAITING FINALIZATION.**
+**Status as of 2026-08-04: DEPLOYED LIVE, CASE `OPEN`. There is no live ruling.**
+
+A ruling executed on 2026-08-02 and the contract read `RULED` / `NON_COMPLIANT`
+/ `REJECTED` for roughly a day. **Bradbury has since canceled both ruling
+transactions and the contract state has reverted to `OPEN`.** Verified
+read-only on 2026-08-04, six reads across `latest-final` and `latest-nonfinal`.
 
 | | |
 | --- | --- |
 | Contract | `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` |
-| Deploy tx | `0x59d661867b1f4ffb93d8673523ccc36496ea7997727585c0f3d3e7570d7c9400` — **finalized**, 30m 22s |
-| Ruling tx (effective) | `0xe22b0ff6743c3b29082f463365f2999a4f90da4eea462a434ef1983eec3bc406` — executed `FINISHED_WITH_RETURN`, **accepted, not finalized** |
-| Duplicate ruling tx | `0x42b6a679116050aee83fb4e96bf4ae0b4f683809bdf128c0be2a906e68ae6e9d` — `TIMEOUT`, **not terminal** |
-| Outcome | `NON_COMPLIANT` |
-| Final status | `REJECTED` |
-| Violated rules | `ART-4.3` |
-| `ruled_at` | `2026-08-02T10:13:02Z` |
-| Validator vote | 4 of 5 `finished_with_return`, 1 `nondet_disagree` → `majority_agree` |
+| Deploy tx | `0x59d661867b1f4ffb93d8673523ccc36496ea7997727585c0f3d3e7570d7c9400` — **`FINALIZED`** (status 7), 30m 22s |
+| Deployed source | 32,043 bytes, SHA-256 `bf845bc4…` — **byte-identical to the repository source** |
+| Ruling tx (formerly effective) | `0xe22b0ff6743c3b29082f463365f2999a4f90da4eea462a434ef1983eec3bc406` — **`CANCELED`** (status 8), execution `NOT_VOTED`, no leader receipt |
+| Duplicate ruling tx | `0x42b6a679116050aee83fb4e96bf4ae0b4f683809bdf128c0be2a906e68ae6e9d` — **`CANCELED`** (status 8) |
+| Contract `status` | **`OPEN`** |
+| `outcome` / `final_status` / `ruled_at` | empty |
+| Evidence sources | all four commit-pinned URLs **intact** at `1d1174e9…` |
+
+Both ruling transactions are terminal-failed, so nothing is in flight and
+nothing is waiting to finalize. `CANCELED` is a **failed** status under this
+project's own classification: the calls settled and applied no state.
+
+### What the ruling showed while it stood
 
 The dispute: Meridian Collective proposal MC-2026-021, a 250,000 USDC treasury
 disbursement. The tally was 340,000 for, 180,000 against, 30,000 abstaining — and
@@ -229,21 +232,29 @@ the organisation **declared it PASSED**.
 
 Article 4.3 requires two-thirds of votes cast above a 100,000 USDC tier, with
 abstentions excluded from *that* denominator. Validators did the arithmetic:
-340,000 / 520,000 ≈ **65.4%**, short of 66.7%. They declined to adopt the
-organisation's own declaration about its own vote.
+340,000 / 520,000 ≈ **65.4%**, short of 66.7%, with 4 of 5 returning
+`finished_with_return` (1 `nondet_disagree` → `majority_agree`). They declined to
+adopt the organisation's own declaration about its own vote, and the verdict
+matched the expectation recorded **before** the case was filed.
 
-The verdict matched the expectation recorded **before** the case was filed.
+**The chain no longer attests to this.** The canceled transaction now reports
+zero rounds and `NOT_VOTED` for all five validators. The account above is
+reproduced from the pilot record taken at the time — it is history, not
+something you can currently re-derive on-chain.
 
 ## Honest live-pilot status
 
-This is not a completed pilot. Stated precisely:
+This is not a completed pilot, and it no longer has a standing on-chain ruling.
+Stated precisely:
 
 | Claim | Status |
 | --- | --- |
-| Contract deployed live on Bradbury | **Yes** — deploy finalized |
-| Case 002 ruled on-chain | **Yes** — contract state reads `RULED` |
-| Case 002 ruling transaction **finalized** | **No** — `ReadyToFinalize` |
-| Duplicate ruling reached a terminal state | **No** — `AppealRevealing` |
+| Contract deployed live on Bradbury | **Yes** — deploy `FINALIZED` |
+| Deployed bytes match the audited source | **Yes** — re-read 2026-08-04, SHA-256 matches |
+| Evidence URLs pinned and reachable | **Yes** — all 18 fixtures verified in CI |
+| Case 002 currently ruled on-chain | **No** — contract state reads `OPEN` |
+| A ruling ever executed on-chain | **Yes, 2026-08-02** — since canceled by the network |
+| Case 002 ruling transaction finalized | **No** — `CANCELED`, terminal |
 | Case 003 deployed | **No — not deployed** |
 | Respondent-response path live-proven | **No — tested, not live-proven** |
 | `CERTIFIED` / `UNRESOLVED` produced on-chain | **No** — fixture expectations only |
@@ -251,25 +262,27 @@ This is not a completed pilot. Stated precisely:
 
 ### Why
 
-**Bradbury write-side instability prevented completion of the remaining live
-workflow.** Transaction acceptance on the network has been unavailable, and the
-per-contract finalization queue for Case 002 is held by a duplicate ruling
-submission that has not reached a terminal state.
+**Bradbury write-side instability.** Transaction acceptance on the network has
+been unavailable, a duplicate ruling submission occupied the per-contract queue
+slot ahead of the effective ruling, and the network ultimately canceled both
+rather than finalizing either.
 
 **This is a network condition, not an application or contract defect.** The
-contract executed correctly and returned `FINISHED_WITH_RETURN` with a 4/5
-majority. The deploy finalized normally. Every offline gate passes. Nothing in
-this repository needs to change for the remaining workflow to complete — it needs
-Bradbury writes to be available again.
+contract executed correctly when it ran and returned `FINISHED_WITH_RETURN` with
+a 4/5 majority. The deploy finalized normally and its bytes still hash to the
+audited source. Every offline gate passes. Nothing in this repository needs to
+change for the case to be ruled again — it needs Bradbury writes to be available.
 
-No further transaction was submitted, no signature requested, and no GEN spent.
+Ruling is permissionless and the case is `OPEN`, so it can be adjudicated again
+without redeploying. No transaction was submitted during this check, no signature
+requested, and no GEN spent.
 
 ### Fixture expectations are not live rulings
 
 | Fixture | Expected outcome | On-chain status |
 | --- | --- | --- |
 | `case-001-compliant-simple-majority` | `COMPLIANT` → `CERTIFIED` | not deployed |
-| `case-002-non-compliant-two-thirds` | `NON_COMPLIANT` → `REJECTED` | **ruled live — matches expectation** |
+| `case-002-non-compliant-two-thirds` | `NON_COMPLIANT` → `REJECTED` | **deployed; ruled 2026-08-02 matching expectation, then canceled — currently `OPEN`** |
 | `case-003-non-compliant-notice-period` | `NON_COMPLIANT` → `REJECTED` | **not deployed** |
 | `case-004-insufficient-evidence` | `INSUFFICIENT_EVIDENCE` → `UNRESOLVED` | not deployed |
 
@@ -288,13 +301,15 @@ No further transaction was submitted, no signature requested, and no GEN spent.
 - **One case per contract.** No registry, no cross-case search.
 - **Scope is treasury proposals** only.
 - **Settlement is slow and currently unreliable** — a network property outside
-  this application's control.
+  this application's control. **An accepted-but-unfinalized ruling can still be
+  canceled**, as Case 002 was.
 - **Bradbury Testnet only.** No mainnet deployment exists.
 
 ## Roadmap
 
 | Next | Why |
 | --- | --- |
+| Re-rule Case 002 once Bradbury writes recover | The case is `OPEN` and ruling is permissionless, so it needs no redeploy — only a working network |
 | Complete Case 003 live once Bradbury writes recover | Proves `OPEN → RESPONDED → RULED` on-chain rather than only in tests |
 | Produce `CERTIFIED` and `UNRESOLVED` on-chain | All three outcomes demonstrated live, not just `REJECTED` |
 | Idempotent submission guard in the filing UI | The duplicate ruling came from a double submission; the client should make that impossible |
@@ -309,16 +324,21 @@ do. ConstitutionCourt does the part that was previously impossible: reading a
 natural-language rule and deciding whether a real vote met it — under consensus,
 against evidence that cannot move, with citations anyone can check.
 
-**It has a real ruling, not a demo.** Five independent validators read a real
-dispute and produced a verdict that contradicted the organisation's own public
-claim about its own vote. The arithmetic is checkable, the citations resolve, and
-the expectation was written down before the filing.
+**It ran for real, on a real dispute.** Five independent validators read the
+Meridian Collective dispute on 2026-08-02 and produced a verdict that
+contradicted the organisation's own public claim about its own vote. The
+arithmetic is checkable, the citations resolved, and the expectation was written
+down before the filing. Bradbury has since canceled that ruling transaction, so
+the case currently reads `OPEN` — the run happened, the record of it did not
+survive the network.
 
 **It is honest about its limits, in the product itself.** Every consensus display
 states what consensus did *not* cover. Every stage of the consensus page states
 what it does not guarantee. This submission does not call the pilot complete,
-because it is not — and the network condition that blocked it is documented
-rather than hidden.
+because it is not — and when a re-check found the live ruling had been canceled,
+the claim was withdrawn and this document was corrected rather than left
+standing. The distinction between `accepted` and `finalized` that this project
+insisted on throughout is exactly the distinction that turned out to matter.
 
 **It is engineered to be checked.** 866 automated tests, contract byte-identity
 enforced in CI, every evidence fixture published with its SHA-256, zero

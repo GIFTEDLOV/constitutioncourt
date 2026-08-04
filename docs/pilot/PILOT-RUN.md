@@ -1,9 +1,16 @@
 # Case 002 — live pilot record
 
-# RULED ON-CHAIN, AWAITING FINALIZATION
+# RULING CANCELED BY THE NETWORK — CASE IS BACK TO `OPEN`
 
-**This is not "pilot complete".** The ruling executed and the contract state is
-authoritative, but the ruling transaction has not reached GenLayer finalization.
+**This is not "pilot complete", and it is no longer "ruled on-chain".** A ruling
+executed on 2026-08-02 and the contract read `RULED` for about a day. On
+2026-08-04 a read-only re-check found that **Bradbury canceled both ruling
+transactions** and the contract state has reverted to `OPEN`.
+
+Sections 1–7 record the run **as it stood on 2026-08-02**. Section 8 records the
+current state and supersedes them wherever they conflict. Nothing has been
+deleted: the run happened, and the record of what it produced is worth keeping
+even though the chain no longer attests to it.
 
 Every figure below was read back from the chain, read-only. Nothing here is
 projected or estimated.
@@ -11,7 +18,8 @@ projected or estimated.
 | | |
 | --- | --- |
 | Pilot date | **2026-08-02** |
-| Last verified | **2026-08-03, 06:18 UTC** |
+| Last verified | **2026-08-04** — see §8 |
+| Current contract state | **`OPEN`** — no ruling on-chain |
 | Network | GenLayer Bradbury Testnet, chain `4221` — testnet only |
 | RPC | `https://rpc-bradbury.genlayer.com` |
 | Explorer | `https://explorer-bradbury.genlayer.com` |
@@ -76,7 +84,11 @@ The on-chain source was read back with `gen_getContractCode` and hashes to
 **exactly** the canonical repository file. The deployment finalized normally,
 matching the documented Bradbury norm of roughly 30 minutes.
 
-## 5. Ruling transactions
+## 5. Ruling transactions — as observed on 2026-08-02
+
+> **Superseded.** Both transactions have since been **`CANCELED`** by the
+> network. The consensus states in this table are what the chain reported on
+> 2026-08-02; see §8 for what it reports now.
 
 Two ruling calls were submitted **8 seconds apart**. This was a double submission
 from the client, not a retry — the harness never resent anything.
@@ -93,7 +105,11 @@ executed successfully and is the ruling recorded on the contract: `ruled_at` is
 The duplicate cannot double-rule. Ruling is terminal, and the contract rejects
 ruling an already-`RULED` case with a `UserError` that changes nothing.
 
-## 6. Validator votes
+## 6. Validator votes — as observed on 2026-08-02
+
+> **Superseded.** The canceled effective-ruling transaction now reports zero
+> rounds and `NOT_VOTED` for all five validators, with no leader receipt. The
+> votes below are what the chain reported on 2026-08-02.
 
 ### Effective ruling — `0xe22b0ff6`
 
@@ -121,7 +137,11 @@ Four rounds, never reaching a terminal state:
 The validator set expanded to 13 on rotation and still did not converge. Last
 state change: `2026-08-02 16:12:47 UTC`.
 
-## 7. Current contract state
+## 7. Contract state on 2026-08-02 — superseded, see §8
+
+> **This is no longer the contract's state.** It reverted to `OPEN` when the
+> ruling transactions were canceled. Kept as the record of what the ruling
+> produced while it stood.
 
 Read with `gen_call` (`type: read`), no wallet:
 
@@ -172,38 +192,79 @@ The arithmetic is correct and the abstention handling follows the rule's own
 words. This is the **leader validator's audit record**, not a consensus-verified
 artefact — consensus covered the outcome and the rule-id set.
 
-## 8. Queue and finalization condition
+## 8. Current state — read-only re-check, 2026-08-04
 
-Neither ruling transaction has finalized.
+**Both ruling transactions were canceled by the network. The case is `OPEN`.**
 
-| Transaction | Last state change | Elapsed since |
-| --- | --- | --- |
-| `0xe22b0ff6` (effective) | `2026-08-02 10:23:17 UTC` | ~20 hours, static |
-| `0x42b6a679` (duplicate) | `2026-08-02 16:12:47 UTC` | ~14 hours, static |
+Read with `gen_call` (`type: read`) using an ephemeral throwaway address as the
+`from` field. No keystore was opened, no configured credential was read, no
+transaction was built, nothing was signed and no GEN was spent. The state read
+was repeated **six times** — three attempts × both `latest-final` and
+`latest-nonfinal` — and was identical every time.
 
-Bradbury serialises transactions per contract, and each step waits on the
-previous one's finality. The duplicate occupies the queue slot **ahead** of the
-effective ruling, so the effective ruling cannot finalize until the duplicate
-reaches a terminal state.
+### Transactions
 
-Separately, **Bradbury write-side availability has been confirmed as a general
-network issue.** Transaction acceptance is unavailable network-wide.
+| Transaction | Status | Execution | Rounds | Leader receipt |
+| --- | --- | --- | --- | --- |
+| `0x59d661867b…` (deploy) | **`FINALIZED`** (7) | `FINISHED_WITH_RETURN` | 0 | — |
+| `0xe22b0ff6…` (effective ruling) | **`CANCELED`** (8) | `NOT_VOTED` | 0 | `null` |
+| `0x42b6a679…` (duplicate ruling) | **`CANCELED`** (8) | `NOT_VOTED` | 4 | `null` |
+
+The effective ruling now reports `tx_receipt: "0x"`, `num_of_rounds: 0` and
+`NOT_VOTED` for all five of its round validators. **The chain no longer attests
+to the 4/5 `majority_agree` recorded in §6.**
+
+### Contract state
+
+```json
+{
+  "status": "OPEN",
+  "outcome": "",
+  "final_status": "",
+  "violated_rule_ids": [],
+  "created_at": "2026-08-02T09:32:02Z",
+  "ruled_at": "",
+  "has_response": false,
+  "responded_at": ""
+}
+```
+
+`get_evidence_sources` is unchanged: all four URLs still pinned to commit
+`1d1174e9f30e8674c28ab41272125ea11d691d84`, `response_url` empty.
+
+### What survived and what did not
+
+| Fact | State on 2026-08-04 |
+| --- | --- |
+| Contract deployed and finalized | **Intact** — deploy status `FINALIZED` |
+| Deployed bytes | **Intact** — 32,043 B, SHA-256 `bf845bc4…`, matches the repository source |
+| Pinned evidence URLs | **Intact** — all four, commit-pinned |
+| The ruling | **Gone** — both ruling transactions `CANCELED`, state back to `OPEN` |
 
 ### This is a network condition, not a defect
 
 | Evidence | Reading |
 | --- | --- |
-| Contract returned `FINISHED_WITH_RETURN` with 4/5 `majority_agree` | The contract executed correctly |
-| Deploy finalized normally in 30m 22s | The pipeline works when the network is healthy |
-| Deployed bytes hash to the canonical source | The right code is on-chain |
-| 866 automated tests pass; all 10 CI jobs green | No application defect is implicated |
+| Contract returned `FINISHED_WITH_RETURN` with 4/5 `majority_agree` when it ran | The contract executed correctly |
+| Deploy finalized normally in 30m 22s and its bytes still verify | The pipeline works when the network is healthy |
+| Cancellation hit **both** ruling transactions, including one that had already executed | A consensus-layer outcome, not a contract-layer one |
+| 866 automated tests pass; all CI jobs green | No application defect is implicated |
 
-**Nothing in this repository needs to change for the remaining workflow to
-complete.** It needs Bradbury writes to be available again.
+`CANCELED` is a **failed, terminal** status under `pilot/classify.py`. Both calls
+settled and applied no state, so nothing is in flight and nothing is orphaned.
 
-## 9. Stop decision
+**Nothing in this repository needs to change for the case to be ruled again.**
+Ruling is permissionless and the case is `OPEN`, so it needs no redeploy — only
+a working network.
+
+## 9. Stop decision — taken 2026-08-03, while the transactions were still in flight
 
 **Stopped deliberately. No further transaction was submitted.**
+
+> The reasoning below was correct for the state at the time. Both ruling
+> transactions have since reached a terminal `CANCELED` state, so the
+> "queued behind two in flight" and "already passed 4–1" conditions no longer
+> hold — see §8 and §12.
 
 | Action | Decision |
 | --- | --- |
@@ -241,7 +302,12 @@ tested, not live-proven.**
 3. **`accepted` is not `finalized`, and the difference must be visible.**
    Contract state can read `RULED` while the transaction that produced it is
    still awaiting finalization. Conflating the two would have produced a claim we
-   could not defend.
+   could not defend. **This was borne out two days later:** the unfinalized
+   ruling was canceled, the contract reverted to `OPEN`, and every claim written
+   as "ruled, awaiting finalization" had to be withdrawn — but none of them had
+   said "final", so nothing published was ever untrue at the time it was written.
+   Read state derived from an unfinalized transaction is provisional, and should
+   be re-read before it is relied on rather than cached into a document.
 4. **Read-only verification carried the whole investigation.** Every fact in this
    record was obtained without signing anything. Designing the harness so reads
    never require a wallet made it possible to diagnose a stalled write with zero
@@ -256,14 +322,17 @@ tested, not live-proven.**
 
 In order, once Bradbury writes are available:
 
-1. **Let Case 002 finalize.** No action required — it needs the duplicate ahead
-   of it to terminate. Re-poll `gen_getTransactionStatus`; do not resubmit.
+1. **Re-rule Case 002.** The case is `OPEN` and ruling is permissionless, so this
+   needs no redeploy and no new contract — one `rule()` call on the existing
+   address. Both prior ruling transactions are terminal-failed, so there is
+   nothing in flight to collide with. Confirm `status == "OPEN"` with a read
+   immediately before calling.
 2. **Run Case 003 end to end** to demonstrate `OPEN → RESPONDED → RULED` live,
    exercising the respondent-response path that is currently tested only.
 3. **Produce `CERTIFIED` and `UNRESOLVED` on-chain** via case-001 and case-004,
    so all three outcomes exist as live rulings rather than fixture expectations.
-4. **Write the finalized pilot record** to `deploy/bradbury/case-002/` once the
-   ruling transaction actually finalizes.
+4. **Write the finalized pilot record** to `deploy/bradbury/case-002/` once a
+   ruling transaction actually reaches `FINALIZED` — not merely `ACCEPTED`.
 
-Until step 1 completes, Case 002 must be described as **ruled on-chain, awaiting
-finalization** — never as final, complete, or finalized.
+Until a ruling transaction finalizes, Case 002 must be described as **deployed,
+`OPEN`, with no live ruling** — never as ruled, final, complete, or finalized.
