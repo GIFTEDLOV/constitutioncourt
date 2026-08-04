@@ -188,95 +188,67 @@ stored prose as consensus-verified is a misreading.
 
 ## Case 002 — live evidence
 
-**Status as of 2026-08-04: DEPLOYED LIVE, CASE `OPEN`. There is no live ruling.**
+**RULED AND FINALIZED ON-CHAIN.** `NON_COMPLIANT` → `REJECTED`, citing `ART-4.3`.
 
-The contract is deployed and finalized on Bradbury. A ruling **did** execute on
-2026-08-02 and the contract read `RULED` / `NON_COMPLIANT` / `REJECTED` for
-about a day. It no longer does. On 2026-08-04 a read-only re-check found that
-**Bradbury canceled both ruling transactions** and the contract state has
-reverted to `OPEN`.
-
-This section previously claimed a standing on-chain ruling. That claim is
-withdrawn. What follows is the current chain state, read read-only, six times,
-across both `latest-final` and `latest-nonfinal`.
+![Live Case 002 read from Bradbury, showing the case title with RULED and REJECTED set at display scale](docs/assets/screenshots/case-002-overview-desktop.png)
 
 | | |
 | --- | --- |
 | Contract | `0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc` |
-| Deploy tx | `0x59d661867b1f4ffb93d8673523ccc36496ea7997727585c0f3d3e7570d7c9400` — **`FINALIZED`** (status 7), 30m 22s |
+| Deploy tx | `0x59d661867b1f4ffb93d8673523ccc36496ea7997727585c0f3d3e7570d7c9400` — **`FINALIZED`**, 30m 22s |
 | Deployed source | 32,043 bytes, SHA-256 `bf845bc4…` — **byte-identical to the repository source** |
-| Ruling tx (formerly effective) | `0xe22b0ff6743c3b29082f463365f2999a4f90da4eea462a434ef1983eec3bc406` — **`CANCELED`** (status 8), execution `NOT_VOTED`, no leader receipt |
-| Duplicate ruling tx | `0x42b6a679116050aee83fb4e96bf4ae0b4f683809bdf128c0be2a906e68ae6e9d` — **`CANCELED`** (status 8) |
-| Contract `status` | **`OPEN`** |
-| `outcome` / `final_status` / `ruled_at` | empty |
-| `violated_rule_ids` | `[]` |
-| Evidence sources | all four commit-pinned URLs **intact** at `1d1174e9…` |
+| **Ruling tx** | `0x868c28dc9c2686a8a9ccffa7f05e9137e88082da11f968bcfd7e9e6c75460a16` — **`FINALIZED`**, execution `FINISHED_WITH_RETURN`, consensus `AGREE`, 0 rounds |
+| Outcome | `NON_COMPLIANT` |
+| Final status | `REJECTED` |
+| Violated rules | `ART-4.3` |
+| `ruled_at` | `2026-08-04T15:19:21Z` |
+| Validator vote | 3 `AGREE`, 1 `DETERMINISTIC_VIOLATION`, 1 `TIMEOUT` → `AGREE`, single round |
 
-Both ruling transactions are terminal-failed, so nothing is in flight and
-nothing is waiting to finalize. Under the project's own classification
-(`pilot/classify.py`), `CANCELED` is a **failed** status: the calls settled and
-**applied no state**.
+![Ruling detail showing violated rule ART-4.3 supermajority approval threshold, the consensus-scope note, and citations anchored to commit-pinned evidence URLs](docs/assets/screenshots/case-002-ruling-detail-desktop.png)
 
-### What the ruling showed while it stood
+Validators declined to adopt the organisation's own declaration that the vote
+had passed, and did the abstention arithmetic the rule's words require:
+340,000 / 520,000 ≈ **65.4%**, short of the two-thirds bar of 66.7%. The verdict
+matched the expectation recorded **before** the case was filed.
 
-The screenshots below were captured on 2026-08-02, while the ruling was live.
-**They are a historical record of what the application displayed then, not the
-current state of the case.**
+### It took two attempts, and that is part of the record
 
-![Case 002 as read from Bradbury on 2026-08-02, showing the case title with RULED and REJECTED set at display scale](docs/assets/screenshots/case-002-overview-desktop.png)
+| | |
+| --- | --- |
+| **2026-08-02** | A ruling executed and the contract read `RULED` for about a day — but it never finalized. A duplicate submission 8 seconds earlier held the per-contract queue slot, and Bradbury eventually **canceled both** ruling transactions (`0xe22b0ff6…` and `0x42b6a679…`, both status 8, terminal). The case reverted to `OPEN` and the claim was withdrawn from this README. |
+| **2026-08-04** | Write-side availability recovered. **One** `rule()` call against the same contract — no redeploy, no new case — reached `FINALIZED`. |
 
-![Ruling detail as recorded on 2026-08-02, showing violated rule ART-4.3 supermajority approval threshold, the consensus-scope note, and two citations anchored to commit-pinned evidence URLs](docs/assets/screenshots/case-002-ruling-detail-desktop.png)
+The two rulings were produced by **different validator sets two days apart** and
+reached the **same outcome and the same rule id**. Only one validator,
+`0x4f36CB2C…`, sat in both sets. That is a reproducibility result the project
+did not set out to run and would not have got from a single successful attempt.
 
-Five validators read the dispute and 4 of 5 returned `finished_with_return`
-(1 `nondet_disagree` → `majority_agree`). They declined to adopt the
-organisation's own declaration that the vote had passed, and did the abstention
-arithmetic the rule's words require: 340,000 / 520,000 ≈ **65.4%**, short of the
-two-thirds bar of 66.7% — matching the expectation recorded before the case was
-filed.
-
-**The chain no longer attests to any of this.** The canceled transaction now
-reports zero rounds and `NOT_VOTED` for all five validators. The reasoning above
-is reproduced from the pilot record taken at the time; it is history, not
-evidence you can currently re-derive on-chain.
+It is also why this repository distinguishes `accepted` from `finalized`
+everywhere: the first ruling was accepted and was still lost. **Only `FINALIZED`
+is durable.**
 
 ### Precisely what is and is not proven
 
 | Claim | Status |
 | --- | --- |
 | Contract deployed live on Bradbury | **Yes** — deploy transaction `FINALIZED` |
-| Deployed bytes match the audited source | **Yes** — re-read on 2026-08-04, SHA-256 matches |
+| Deployed bytes match the audited source | **Yes** — re-read 2026-08-04, SHA-256 matches |
 | Evidence URLs pinned and reachable | **Yes** — all 18 fixtures verified in CI |
-| Case 002 currently ruled on-chain | **No** — contract state reads `OPEN` |
-| A ruling ever executed on-chain | **Yes, on 2026-08-02** — since canceled by the network |
-| Case 002 ruling transaction finalized | **No** — `CANCELED`, terminal |
+| Case 002 ruled on-chain | **Yes** — contract state reads `RULED` |
+| Case 002 ruling transaction **finalized** | **Yes** — `FINALIZED`, `FINISHED_WITH_RETURN` |
+| Verdict matches the pre-recorded expectation | **Yes** — `NON_COMPLIANT` → `REJECTED`, `ART-4.3` |
+| Verdict reproducible across independent validator sets | **Yes** — two sets, two days apart, identical verdict |
 | Case 003 deployed | **No — not deployed.** No contract, no on-chain ruling |
 | Respondent-response path (`OPEN → RESPONDED → RULED`) | **Tested, not live-proven.** Covered by the offline suite only |
 | `CERTIFIED` / `UNRESOLVED` produced on-chain | **No** — fixture expectations only |
-| Live pilot complete | **No** |
-
-### Why the workflow was not completed
-
-**Bradbury write-side instability.** The network's transaction-acceptance path
-has been unavailable, a duplicate ruling submission occupied the per-contract
-queue slot ahead of the effective ruling, and the network ultimately canceled
-both rather than finalizing either.
-
-**This is a network condition, not an application or contract defect.** The
-contract executed correctly when it ran and returned `FINISHED_WITH_RETURN` with
-a 4/5 majority; the deploy finalized normally and its bytes still hash to the
-audited source; every offline gate passes. Nothing in this repository needs to
-change for the case to be ruled again — it needs Bradbury writes to be available.
-
-Re-ruling is permissionless and the case is `OPEN`, so it can be re-filed for
-adjudication without redeploying. No transaction was submitted during this
-check, no signature was requested, and no GEN was spent.
+| Live pilot complete for **all four** fixtures | **No** — Case 002 only |
 
 ### Fixture expectations are not live rulings
 
 | Fixture | Expected outcome | On-chain status |
 | --- | --- | --- |
 | `case-001-compliant-simple-majority` | `COMPLIANT` → `CERTIFIED` | not deployed |
-| `case-002-non-compliant-two-thirds` | `NON_COMPLIANT` → `REJECTED` | **deployed; ruled 2026-08-02 matching the expectation, then canceled — currently `OPEN`** |
+| `case-002-non-compliant-two-thirds` | `NON_COMPLIANT` → `REJECTED` | **ruled and finalized live — matches the expectation** |
 | `case-003-non-compliant-notice-period` | `NON_COMPLIANT` → `REJECTED` | **not deployed** |
 | `case-004-insufficient-evidence` | `INSUFFICIENT_EVIDENCE` → `UNRESOLVED` | not deployed |
 
@@ -403,9 +375,10 @@ npm run e2e && npm run e2e:encoding && npm run a11y && npm run sweep
   transactions per contract and each step waits on the previous one's finality;
   a single write commonly takes ~30 minutes. Write-side availability is a
   network property outside this application's control. **A ruling that has been
-  accepted but not finalized can still be canceled by the network** — that is
-  what happened to Case 002, and it is why this project distinguishes `accepted`
-  from `finalized` everywhere rather than treating the first as the second.
+  accepted but not finalized can still be canceled by the network** — that
+  happened to Case 002's first ruling, which is why this project distinguishes
+  `accepted` from `finalized` everywhere rather than treating the first as the
+  second. The case was re-ruled and finalized on 2026-08-04.
 - **Bradbury Testnet only.** There is no mainnet deployment.
 - Not a legal court, not a treasury executor, not a voting platform, not escrow,
   not a chatbot, and not a replacement for GenLayer's native transaction appeal.

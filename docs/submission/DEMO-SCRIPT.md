@@ -86,14 +86,10 @@ both paths: `OPEN → RESPONDED → RULED` and `OPEN → RULED`.
 
 ---
 
-### 1:40 – 2:15 · The live case — Case 002
+### 1:40 – 2:15 · The live ruling — Case 002
 
-**Screen** — Open the live case URL. The page reads `OPEN`. Hold on the case
-title and the evidence sources, then scroll through the four commit-pinned URLs.
-
-> **The page no longer shows a ruling.** Bradbury canceled both ruling
-> transactions and the case reverted to `OPEN`. Do not read this beat from the
-> old script, and do not cut in the 2026-08-02 screenshots as if they were live.
+**Screen** — Open the live case URL. Hold on the giant `RULED` / `REJECTED`
+typography, then scroll to "Violated rules" and the citations.
 
 **Voice-over**
 > This is a real case, read live from Bradbury. Meridian Collective, proposal
@@ -103,36 +99,32 @@ title and the evidence sources, then scroll through the four commit-pinned URLs.
 > Article 4.3 requires two-thirds above the hundred-thousand tier, with
 > abstentions excluded from that denominator. Three-forty over five-twenty is
 > sixty-five point four percent. Two-thirds is sixty-six point seven. It fails —
-> narrowly. That is the reading the validators have to make, and it is why this
-> cannot be a threshold function.
+> narrowly.
 >
-> This case was ruled that way on August second — `NON_COMPLIANT`, `REJECTED`,
-> citing `ART-4.3`, four of five validators agreeing. The network then canceled
-> the ruling transaction, so the case reads `OPEN` again. What you can still
-> check right now is the evidence: four URLs pinned to a commit, the deployed
-> contract byte-identical to the source, and nothing here that asks you to take
-> my word for a verdict.
+> `NON_COMPLIANT`, mapping to `REJECTED`, citing `ART-4.3`. The ruling
+> transaction is finalized, and every citation resolves to the exact
+> commit-pinned document the validators read.
 
-**Caption** — `Ruled 2026-08-02 · canceled by the network · currently OPEN`
+**Caption** — `NON_COMPLIANT → REJECTED · ART-4.3 · FINALIZED`
 
 ---
 
 ### 2:15 – 2:30 · The explorer, and an honest limitation
 
-**Screen** — Switch to the Bradbury explorer tab showing the two ruling
-transactions, both `CANCELED`.
+**Screen** — Switch to the Bradbury explorer tab showing the finalized ruling
+transaction.
 
 **Voice-over**
-> Here are the ruling transactions on the explorer. The deploy finalized in
-> thirty minutes and is still good. The ruling executed on August second and the
-> contract read `RULED` for about a day — but it never finalized, and Bradbury
-> then canceled both ruling transactions. The case is back to `OPEN`.
+> Here's the ruling on the explorer — finalized, execution finished with return,
+> consensus agree. It took two attempts. The first ruling executed back on August
+> second but never finalized, and the network canceled it. This one, two days
+> later, is the one that stuck.
 >
-> That's a network condition, not a contract defect, and ruling is
-> permissionless — so the case can be adjudicated again without redeploying. But
-> right now there is no verdict on-chain, and I'm not going to show you one.
+> Worth noting what that accident proved: a different set of validators reached
+> the same verdict, citing the same rule. I'd rather it had worked first time,
+> but I'll take the reproducibility.
 
-**Caption** — `Ruling canceled by the network · case is OPEN · no live verdict`
+**Caption** — `FINALIZED · two validator sets · same verdict`
 
 ---
 
@@ -164,9 +156,8 @@ github.com/GIFTEDLOV/constitutioncourt
   correctly reads "No wallet detected — reading works without one"; leave it.
 - **No transaction is submitted** at any point.
 - Do not present a **fixture** expectation as a ruling. Only Case 002 is live.
-- **Do not claim a live ruling.** Case 002 reads `OPEN`. The 2026-08-02 ruling
-  was canceled by the network; describe it in the past tense or not at all.
-- Do not say Case 002 is "final", "complete", "ruled", or "finalized".
+- Case 002 **is** ruled and finalized — that claim is now correct. Do not extend
+  it to the other three fixtures, which have never been deployed.
 - Do not claim the respondent-response path has been demonstrated live — it has
   not; Case 003 is not deployed.
 - Keep the finalization limitation in. It is 15 seconds and it is the reason the
@@ -174,14 +165,13 @@ github.com/GIFTEDLOV/constitutioncourt
 
 ## If asked afterwards
 
-**"Why isn't there a ruling?"**
-There was one, on 2026-08-02. A duplicate ruling call was submitted 8 seconds
-before the effective one; it timed out at the consensus layer, applied no state,
-and held the per-contract queue slot ahead of the real ruling. Neither finalized,
-and Bradbury subsequently canceled both — status `CANCELED`, terminal. The
-contract reverted to `OPEN`. Separately, Bradbury's write side has been
-unavailable. Ruling is permissionless and the case is `OPEN`, so it can be
-adjudicated again on the same contract once the network recovers.
+**"Why are there three ruling transactions?"**
+The first attempt, on 2026-08-02, was a double submission 8 seconds apart. The
+duplicate timed out at the consensus layer, applied no state, and held the
+per-contract queue slot ahead of the real ruling. Neither finalized, and Bradbury
+canceled both — status `CANCELED`, terminal, no state applied. Because ruling is
+permissionless and the case had reverted to `OPEN`, a single new `rule()` call on
+2026-08-04 finalized it. No redeploy, no new case, one transaction.
 
 **"Has the response path been demonstrated?"**
 Not live. Case 002's respondent stayed silent, exercising `OPEN → RULED`. Case
