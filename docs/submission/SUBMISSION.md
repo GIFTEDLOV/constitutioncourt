@@ -198,7 +198,7 @@ question.
 | Evidence fixtures | schema v1, re-fetched and re-hashed — pass |
 | GenVM lint · line endings · secret scan | pass |
 
-All ten CI jobs run on every push to `main`.
+All nine CI jobs run on every push to `main`.
 
 ## Case 002 — live evidence
 
