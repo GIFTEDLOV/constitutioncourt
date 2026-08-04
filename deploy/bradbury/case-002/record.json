@@ -1,0 +1,416 @@
+{
+  "accounts": {
+    "challenger": "0x456Ccff0d33463E1834F724C5C5971D6cff6f1dc",
+    "respondent": "0x79DD8260773C7D5DEA701dfC2D3dD804FF041bf2"
+  },
+  "case": "case-002",
+  "contract": {
+    "address": "0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc",
+    "source_sha256": "bf845bc43768cb0829157ae9e7dad01a4d15b333c4139255d5018ac6ecf99341"
+  },
+  "created_at": "2026-08-04T16:58:33Z",
+  "events": [
+    {
+      "at": "2026-08-04T16:58:51Z",
+      "detail": "deploy() submitted",
+      "kind": "submitted",
+      "step": "deploy",
+      "tx_hash": "0x59d661867b1f4ffb93d8673523ccc36496ea7997727585c0f3d3e7570d7c9400"
+    },
+    {
+      "at": "2026-08-04T16:58:51Z",
+      "detail": "Finalized, and the contract ran to completion.",
+      "kind": "settled",
+      "phase": "finalized",
+      "step": "deploy"
+    },
+    {
+      "at": "2026-08-04T16:59:06Z",
+      "detail": "rule() submitted",
+      "kind": "submitted",
+      "step": "rule",
+      "tx_hash": "0x868c28dc9c2686a8a9ccffa7f05e9137e88082da11f968bcfd7e9e6c75460a16"
+    },
+    {
+      "at": "2026-08-04T16:59:06Z",
+      "detail": "Finalized, and the contract ran to completion.",
+      "kind": "settled",
+      "phase": "finalized",
+      "step": "rule"
+    },
+    {
+      "at": "2026-08-04T16:59:30Z",
+      "detail": "record reconstructed read-only from live state",
+      "kind": "browser-pilot"
+    }
+  ],
+  "evidence": [
+    {
+      "bytes": 2611,
+      "filename": "constitution.json",
+      "role": "constitution",
+      "sha256": "08ea34a2b415aa94608a6f009ec5353b4e3decdd8eb094416929e31fb3023b99",
+      "url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/constitution.json"
+    },
+    {
+      "bytes": 662,
+      "filename": "proposal.json",
+      "role": "proposal",
+      "sha256": "638b7882dd48000681e14ade81e500185a1efacf752195cecedd002eaf5c2be9",
+      "url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/proposal.json"
+    },
+    {
+      "bytes": 372,
+      "filename": "vote-record.json",
+      "role": "vote-record",
+      "sha256": "52e330445a9177278bcc4a26d61582007b67a2d5ec59510068f41c50cac533b1",
+      "url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/vote-record.json"
+    },
+    {
+      "bytes": 476,
+      "filename": "notice-record.json",
+      "role": "notice-record",
+      "sha256": "f7b5d2d04316bccc3519d72e63858efa229af1b2a1b1aecee3f487d879c32e30",
+      "url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/notice-record.json"
+    }
+  ],
+  "inputs": {
+    "case": "case-002",
+    "expected_final_status": "REJECTED",
+    "expected_outcome": "NON_COMPLIANT",
+    "expected_rule_ids": [
+      "ART-4.3"
+    ],
+    "lifecycle": "OPEN -> RULED",
+    "signed_via": "browser wallet (injected provider)",
+    "title": "Meridian Collective \u2014 MC-2026-021 two-thirds threshold challenge"
+  },
+  "network": {
+    "chain_id": 4221,
+    "name": "Genlayer Bradbury Testnet"
+  },
+  "state_snapshots": {
+    "final": {
+      "at": "2026-08-04T16:59:30Z",
+      "get_evidence_sources": {
+        "constitution_url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/constitution.json",
+        "notice_record_url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/notice-record.json",
+        "proposal_url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/proposal.json",
+        "response_url": "",
+        "schema_version": "constitutioncourt/evidence@1",
+        "vote_record_url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/vote-record.json"
+      },
+      "get_state": {
+        "case_title": "Meridian Collective \u2014 MC-2026-021 two-thirds threshold challenge",
+        "challenger": "0x456Ccff0d33463E1834F724C5C5971D6cff6f1dc",
+        "created_at": "2026-08-02T09:32:02Z",
+        "evidence_citations": [
+          {
+            "locator": "$.requested_amount",
+            "quote": "{\"amount\":\"250000\",\"asset\":\"USDC\"}",
+            "source": "proposal",
+            "supports": "ART-4.3",
+            "url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/proposal.json"
+          },
+          {
+            "locator": "$.rules[3].text",
+            "quote": "A treasury disbursement of more than 100,000 USDC is approved only when at least two-thirds of the votes cast are in favour. Abstentions count toward quorum under Article 3.1 but are excluded from the denominator when calculating this threshold. A simple majority is not sufficient at this tier.",
+            "source": "constitution",
+            "supports": "ART-4.3",
+            "url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/constitution.json"
+          },
+          {
+            "locator": "$.tally",
+            "quote": "{\"abstain\":\"30000\",\"against\":\"180000\",\"for\":\"340000\"}",
+            "source": "vote-record",
+            "supports": "ART-4.3",
+            "url": "https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/vote-record.json"
+          }
+        ],
+        "final_status": "REJECTED",
+        "has_response": false,
+        "outcome": "NON_COMPLIANT",
+        "reasoning": "The proposal is a treasury disbursement of 250,000 USDC, so the supermajority threshold in ART-4.3 applies. Excluding abstentions as required, votes cast are 340,000 for and 180,000 against, for a denominator of 520,000; two-thirds requires at least 346,666.67 votes in favour, but only 340,000 were in favour. Quorum, notice, and the single-disbursement cap are satisfied on the record, but ART-4.3 was violated.",
+        "responded_at": "",
+        "respondent": "0x79DD8260773C7D5DEA701dfC2D3dD804FF041bf2",
+        "ruled_at": "2026-08-04T15:19:21Z",
+        "status": "RULED",
+        "violated_rule_ids": [
+          "ART-4.3"
+        ]
+      }
+    }
+  },
+  "steps": {
+    "citations": {
+      "verification": [
+        {
+          "detail": "url='https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/proposal.json'",
+          "id": "citation-0",
+          "label": "Citation 0 points at a pinned URL",
+          "ok": true
+        },
+        {
+          "detail": "url='https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/constitution.json'",
+          "id": "citation-1",
+          "label": "Citation 1 points at a pinned URL",
+          "ok": true
+        },
+        {
+          "detail": "url='https://raw.githubusercontent.com/GIFTEDLOV/constitutioncourt/1d1174e9f30e8674c28ab41272125ea11d691d84/evidence/case-002-non-compliant-two-thirds/vote-record.json'",
+          "id": "citation-2",
+          "label": "Citation 2 points at a pinned URL",
+          "ok": true
+        }
+      ]
+    },
+    "deploy": {
+      "consensus_result": "AGREE",
+      "consensus_status": "FINALIZED",
+      "detail": "Finalized, and the contract ran to completion.",
+      "execution_result": "FINISHED_WITH_RETURN",
+      "last_vote_at": "2026-08-02T09:32:20Z",
+      "method": "deploy",
+      "phase": "finalized",
+      "retry_classification": "pointless",
+      "status": "settled",
+      "submitted_at": "2026-08-02T09:32:02Z",
+      "succeeded": true,
+      "tx_hash": "0x59d661867b1f4ffb93d8673523ccc36496ea7997727585c0f3d3e7570d7c9400",
+      "validator_vote_tally": {
+        "AGREE": 5
+      },
+      "validator_votes": {
+        "consensusResult": "AGREE",
+        "leader": "0x3f5cAED686336ED9cF3Dede61154B0Cd67Fb9bD7",
+        "leaderIndex": "0",
+        "numOfRounds": "0",
+        "rotationsLeft": "3",
+        "roundValidators": [
+          "0x3f5cAED686336ED9cF3Dede61154B0Cd67Fb9bD7",
+          "0x9F6aa7364D20CF25F054Ea83f3CB950317fD34b6",
+          "0xB93a46B843fB32E8Ce392e68eDFE93Faa4a40817",
+          "0xa856ae1b278F030082c66Fa50A5F51F485D1F940",
+          "0x4f36CB2C58385575fafb443d80E3c290b12DA6aE"
+        ],
+        "validatorVotes": [
+          "AGREE",
+          "AGREE",
+          "AGREE",
+          "AGREE",
+          "AGREE"
+        ],
+        "votesCommitted": "5",
+        "votesRevealed": "5"
+      },
+      "verification": [
+        {
+          "detail": "FINALIZED",
+          "id": "finalized",
+          "label": "Receipt finalized",
+          "ok": true
+        },
+        {
+          "detail": "FINISHED_WITH_RETURN",
+          "id": "execution",
+          "label": "Execution succeeded",
+          "ok": true
+        },
+        {
+          "detail": "The finalized receipt names no contract address in its decoded transaction data. Its recipient is 0x4C8BC901732c4b158AF3Bb9f92041e6fC78648Bc, which is not used: for a deploy `recipient` is node-dependent \u2014 the zero address on some nodes, the contract on others \u2014 so it can never establish which contract was deployed.",
+          "id": "address",
+          "label": "Non-zero contract address recovered from the decoded receipt",
+          "ok": false
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "code",
+          "label": "Contract code exists on-chain",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "source",
+          "label": "Deployed source hash matches canonical source",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "state",
+          "label": "get_state readable",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "sources",
+          "label": "get_evidence_sources readable",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "challenger",
+          "label": "Challenger matches signer",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "respondent",
+          "label": "Respondent matches input",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "title",
+          "label": "Case title matches",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "urls",
+          "label": "All four immutable URLs match",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "status",
+          "label": "Status is OPEN",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "response",
+          "label": "response_url empty",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "ruling",
+          "label": "outcome and final_status empty",
+          "ok": null
+        },
+        {
+          "detail": "Not reached \u2014 an earlier check failed.",
+          "id": "created",
+          "label": "created_at populated",
+          "ok": null
+        }
+      ]
+    },
+    "rule": {
+      "consensus_result": "AGREE",
+      "consensus_status": "FINALIZED",
+      "detail": "Finalized, and the contract ran to completion.",
+      "execution_result": "FINISHED_WITH_RETURN",
+      "last_vote_at": "2026-08-04T15:20:03Z",
+      "method": "rule",
+      "phase": "finalized",
+      "retry_classification": "pointless",
+      "status": "settled",
+      "submitted_at": "2026-08-04T15:19:21Z",
+      "succeeded": true,
+      "tx_hash": "0x868c28dc9c2686a8a9ccffa7f05e9137e88082da11f968bcfd7e9e6c75460a16",
+      "validator_vote_tally": {
+        "AGREE": 3,
+        "DETERMINISTIC_VIOLATION": 1,
+        "TIMEOUT": 1
+      },
+      "validator_votes": {
+        "consensusResult": "AGREE",
+        "leader": "0xC32bD21E1506Ab4954BA1EE8FBD50271Ca61b7DE",
+        "leaderIndex": "4",
+        "numOfRounds": "0",
+        "rotationsLeft": "3",
+        "roundValidators": [
+          "0x96298d411a2D622945BEACa6112374583b501d52",
+          "0x8E7765267023F88d4155d52F4ce2319aDDf1dc33",
+          "0x4f36CB2C58385575fafb443d80E3c290b12DA6aE",
+          "0x3f5cAED686336ED9cF3Dede61154B0Cd67Fb9bD7",
+          "0xC32bD21E1506Ab4954BA1EE8FBD50271Ca61b7DE"
+        ],
+        "validatorVotes": [
+          "AGREE",
+          "DETERMINISTIC_VIOLATION",
+          "AGREE",
+          "TIMEOUT",
+          "AGREE"
+        ],
+        "votesCommitted": "5",
+        "votesRevealed": "5"
+      },
+      "verification": [
+        {
+          "detail": "status=RULED",
+          "id": "status",
+          "label": "Status is RULED",
+          "ok": true
+        },
+        {
+          "detail": "outcome='NON_COMPLIANT'",
+          "id": "outcome_valid",
+          "label": "Outcome is one of the three",
+          "ok": true
+        },
+        {
+          "detail": "outcome='NON_COMPLIANT'",
+          "id": "outcome",
+          "label": "Outcome is NON_COMPLIANT",
+          "ok": true
+        },
+        {
+          "detail": "final_status='REJECTED'",
+          "id": "final_status",
+          "label": "Final status is REJECTED",
+          "ok": true
+        },
+        {
+          "detail": "NON_COMPLIANT should map to REJECTED",
+          "id": "mapping",
+          "label": "Final status matches the locked outcome mapping",
+          "ok": true
+        },
+        {
+          "detail": "ids=['ART-4.3']",
+          "id": "rule_ids",
+          "label": "Violated rule ids are exactly ['ART-4.3']",
+          "ok": true
+        },
+        {
+          "detail": "ids=['ART-4.3']",
+          "id": "rule_ids_unique",
+          "label": "Each violated rule id appears exactly once",
+          "ok": true
+        },
+        {
+          "detail": "ruled_at='2026-08-04T15:19:21Z'",
+          "id": "ruled_at",
+          "label": "ruled_at populated",
+          "ok": true
+        },
+        {
+          "detail": "3 citation(s)",
+          "id": "citations_present",
+          "label": "At least one citation recorded",
+          "ok": true
+        },
+        {
+          "detail": "3 citation(s)",
+          "id": "citations_decode",
+          "label": "Every citation decodes to an object with the expected keys",
+          "ok": true
+        }
+      ]
+    },
+    "rule_resolution": {
+      "verification": [
+        {
+          "detail": "constitution declares 7 rule ids",
+          "id": "rule-ART-4.3",
+          "label": "ART-4.3 resolves in the pinned constitution",
+          "ok": true
+        }
+      ]
+    }
+  },
+  "updated_at": "2026-08-04T16:59:30Z",
+  "version": 1
+}

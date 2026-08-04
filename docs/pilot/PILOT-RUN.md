@@ -428,31 +428,49 @@ Still outstanding, and **not** claimed anywhere as done:
    exercising the respondent-response path that is currently tested only.
 2. **Produce `CERTIFIED` and `UNRESOLVED` on-chain** via case-001 and case-004,
    so all three outcomes exist as live rulings rather than fixture expectations.
-3. **Write the machine-readable pilot record** to `deploy/bradbury/case-002/`.
-   Blocked on a harness defect, not on the network — see §13.
 
 Case 002 may now be described as **deployed, ruled and finalized**. The other
 three fixtures may not be described as ruled at all.
 
-## 13. Known harness defect — `pilot record` cannot write this run
+## 13. Harness defects found writing this record — fixed
 
-`python -m pilot record case-002 …` fails against Bradbury, so
-`deploy/bradbury/case-002/record.json` does not exist despite the run having
-finalized. Two independent causes, both in the harness rather than the network:
+`python -m pilot record case-002 …` failed against Bradbury, and its partial
+output briefly reached `main` claiming `succeeded: false` for a run that had
+finalized. Two independent read-path causes, both in operator tooling rather
+than the network, and both now fixed:
 
-1. **`GenLayerAdapter.read` has no account.** `pilot/chain.py` builds the client
-   with `gl.create_client(chain=…)` and no account, but genlayer-py's
-   `read_contract` raises `"No account provided and no account is connected"` —
-   it requires a `from` address even for a read. Reads in this record were done
-   by passing an ephemeral throwaway address to `gen_call` directly.
-2. **`classify()` reads camelCase keys the RPC does not return.**
-   `pilot/classify.py` looks for `statusName`, `txExecutionResultName` and
+1. **`GenLayerAdapter.read` had no caller.** `pilot/chain.py` built the client
+   with no account, but genlayer-py's `read_contract` raises *"No account
+   provided and no account is connected"* — a view still needs a `from`
+   address. Supplying one is not sufficient on its own, either: `read_contract`
+   then does `"0x" + result`, and Bradbury answers `gen_call` with an object
+   rather than a bare hex string, raising `TypeError`. Reads now issue
+   `gen_call` directly with an explicit caller and handle both response shapes.
+2. **`classify()` read camelCase keys the RPC does not return.**
+   `pilot/classify.py` looked for `statusName`, `txExecutionResultName` and
    `resultName`; Bradbury returns `status_name`, `tx_execution_result_name` and
-   `result_name`. The lookup falls through to the numeric `status`, producing
-   *"Unrecognised transaction status '7'"* for a transaction that is plainly
-   `FINALIZED`.
+   `result_name`. Every lookup fell through to the numeric `status`, producing
+   *"Unrecognised transaction status '7'"* for a plainly `FINALIZED`
+   transaction. Both spellings are now accepted, and the numeric codes resolve.
 
-Both are read-path bugs in operator tooling. Neither affects the contract, the
-frontend, or anything deployed — this run finalized correctly and every figure in
-§8 was verified read-only against the chain. They are recorded here rather than
-patched in the same change that documents the run.
+Neither ever affected the contract, the frontend, or anything deployed — this
+run finalized correctly, and every figure in §8 was verified read-only against
+the chain before the tooling could report it.
+
+**The caller address for reads is the zero address**, so a read still involves
+no key of any kind: no keystore is opened, no account is minted, and there is no
+private key in the process to leak.
+
+### Still open, and visible in the record
+
+Address recovery from the deploy receipt **fails**, and the record carries that
+as a finding rather than hiding it. Bradbury returns `tx_data_decoded: null`,
+which is the only field this project will accept a deployed address from.
+`recipient` holds the contract address on this node — but on the reference SDKs
+it holds the zero address for a deploy, so a field whose meaning is
+node-dependent cannot establish which contract was deployed. The rule stands and
+the check fails honestly; twelve downstream deploy checks are consequently
+recorded as not-reached.
+
+The contract address is still recorded, from the operator's input and confirmed
+against live `get_state` — just not *recovered from the receipt*.
